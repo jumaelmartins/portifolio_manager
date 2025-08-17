@@ -1,18 +1,30 @@
 import { IsEmail, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export enum UserRole {
+  Admin = 1,
+  User = 2,
+}
 
 export class CreateUserDto {
   username: string;
   @IsEmail()
+  @ApiProperty({
+    description: 'user email',
+    required: true,
+    example: 'johndoe@email.com',
+  })
   email: string;
   @IsNotEmpty()
+  @ApiProperty({
+    description: 'user password',
+    required: true,
+    example: 'yourStrongP@s5w0rd',
+  })
   password_hash: string;
-  role_id: number;
-  status_id: number;
-  auth_method_id: number;
-  f_profile_pictureId: number;
   role: object;
   status: object;
   auth_method: object;
   online: number;
-  last_login: Date
+  last_login: Date;
 }
