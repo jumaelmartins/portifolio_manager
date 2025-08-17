@@ -13,8 +13,9 @@ A ideia é disponibilizar uma API para ser consumida em portfólios pessoais ou 
 
 ⚙️ Funcionalidades
 
-- [ ] CRUD de usuários
-- [ ] Autenticação com JWT
+- [X] CRUD de usuários
+- [X] Validação de usuario via Email
+- [X] Autenticação com JWT
 - [ ] CRUD de categorias
 - [ ] CRUD de imgs
 - [ ] CRUD de projetos
