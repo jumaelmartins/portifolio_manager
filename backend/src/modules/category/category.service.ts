@@ -1,26 +1,69 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { PrismaService } from 'src/database/prisma.service';
+import { Prisma, d_category } from '@prisma/client';
 
 @Injectable()
 export class CategoryService {
-  create(createCategoryDto: CreateCategoryDto) {
-    return 'This action adds a new category';
+  constructor(private prisma: PrismaService) {}
+
+  async create(data: Prisma.d_categoryCreateInput): Promise<d_category> {
+    const { category } = data;
+
+    const categoryExist = await this.prisma.d_category.findUnique({
+      where: {
+        category: category.toLowerCase(),
+      },
+    });
+
+    if (categoryExist) {
+      throw new ConflictException('Category already exist');
+    }
+
+    const newCategory = await this.prisma.d_category.create({
+      data: { category: category.toLowerCase() },
+    });
+
+    return newCategory;
   }
 
-  findAll() {
-    return `This action returns all category`;
+  async findAll(): Promise<d_category[]> {
+    return this.prisma.d_category.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
+  async findOne(id: number): Promise<d_category> {
+    const category = await this.prisma.d_category.findUnique({
+      where: { id },
+    });
+    if (!category) {
+      throw new Error('Invalid Category');
+    }
+    return category;
   }
 
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
+  async update(
+    id: number,
+    updateCategoryDto: UpdateCategoryDto,
+  ): Promise<d_category> {
+    const category = await this.prisma.d_category.findUnique({ where: { id } });
+
+    if (!category) {
+      throw new Error('Invalid Category');
+    }
+    const updateCategory = await this.prisma.d_category.update({
+      where: { id },
+      data: {
+        category: updateCategoryDto.category.toLowerCase(),
+      },
+    });
+
+    return updateCategory;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} category`;
+  async remove(id: number) {
+    await this.prisma.d_category.delete({ where: { id } });
+
+    return null;
   }
 }
