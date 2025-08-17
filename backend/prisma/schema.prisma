@@ -13,7 +13,7 @@ datasource db {
 
 model d_category {
   id         Int          @id @default(autoincrement())
-  category   String
+  category   String       @unique
   f_projects f_projects[]
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
@@ -21,7 +21,7 @@ model d_category {
 
 model d_status {
   id         Int      @id @default(autoincrement())
-  status     String
+  status     String   @unique
   f_user     f_user[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -29,7 +29,7 @@ model d_status {
 
 model d_roles {
   id         Int      @id @default(autoincrement())
-  role       String
+  role       String   @unique
   f_user     f_user[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -37,7 +37,7 @@ model d_roles {
 
 model d_auth_method {
   id         Int      @id @default(autoincrement())
-  method     String
+  method     String   @unique
   f_user     f_user[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -45,7 +45,7 @@ model d_auth_method {
 
 model d_technologies {
   id         Int          @id @default(autoincrement())
-  tech       String
+  tech       String       @unique
   f_projects f_projects[]
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
@@ -61,7 +61,7 @@ model f_user {
   status                     d_status                     @relation(fields: [status_id], references: [id])
   status_id                  Int                          @default(1)
   auth_method                d_auth_method                @relation(fields: [auth_method_id], references: [id])
-  auth_method_id             Int
+  auth_method_id             Int                          @default(1)
   images                     f_images[]
   f_profile_picture          f_profile_picture?
   f_profile_pictureId        Int?
