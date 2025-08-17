@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verificação de Email</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .container {
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 450px;
+        text-align: center;
+      }
+      .icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        animation: bounce 2s infinite;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+      }
+      input[type='text'] {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+      input[type='text']:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      .code-input {
+        font-family: monospace;
+        font-size: 20px;
+        letter-spacing: 4px;
+        text-align: center;
+      }
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        width: 100%;
+        margin: 10px 0;
+        transition: transform 0.2s;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .alert {
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-weight: 500;
+      }
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .resend-link {
+        color: #667eea;
+        text-decoration: none;
+        font-size: 14px;
+        margin-top: 15px;
+        display: inline-block;
+      }
+      .resend-link:hover {
+        text-decoration: underline;
+      }
+      .loading {
+        display: none;
+      }
+      .loading.show {
+        display: inline-block;
+      }
+
+      @keyframes bounce {
+        0%,
+        20%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        80% {
+          transform: translateY(-5px);
+        }
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-right: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📧</div>
+      <h1>Verificação de Email</h1>
+      <p class="subtitle">Digite o código enviado para seu email</p>
+
+      <div id="alert" class="alert" style="display: none"></div>
+
+      <form id="verificationForm">
+        <div class="form-group">
+          <label for="token">Token de Verificação:</label>
+          <input
+            type="text"
+            id="token"
+            name="token"
+            placeholder="Token recebido por email"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="code">Código de Verificação:</label>
+          <input
+            type="text"
+            id="code"
+            name="code"
+            class="code-input"
+            placeholder="000000"
+            maxlength="6"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn">
+          <span class="loading"><div class="spinner"></div></span>
+          <span class="btn-text">Verificar Email</span>
+        </button>
+      </form>
+
+      <a href="#" id="resendLink" class="resend-link">
+        Não recebeu o código? Reenviar email
+      </a>
+
+      <div style="margin-top: 30px; font-size: 12px; color: #999">
+        <p>O código expira em 30 minutos</p>
+        <p>Verifique sua caixa de spam se não encontrar o email</p>
+      </div>
+    </div>
+
+    <script>
+      // Pega token da URL se disponível
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+
+      if (tokenFromUrl) {
+        document.getElementById('token').value = tokenFromUrl;
+        // Foca no campo do código se token já estiver preenchido
+        document.getElementById('code').focus();
+      }
+
+      // Função para mostrar alertas
+      function showAlert(message, type = 'error') {
+        const alert = document.getElementById('alert');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alert.style.display = 'block';
+
+        // Auto-hide após 5 segundos
+        setTimeout(() => {
+          alert.style.display = 'none';
+        }, 5000);
+      }
+
+      // Função para mostrar loading
+      function setLoading(loading) {
+        const btn = document.querySelector('.btn');
+        const loadingEl = document.querySelector('.loading');
+        const btnText = document.querySelector('.btn-text');
+
+        btn.disabled = loading;
+        if (loading) {
+          loadingEl.classList.add('show');
+          btnText.textContent = 'Verificando...';
+        } else {
+          loadingEl.classList.remove('show');
+          btnText.textContent = 'Verificar Email';
+        }
+      }
+
+      // Submit do formulário
+      document
+        .getElementById('verificationForm')
+        .addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          const token = document.getElementById('token').value.trim();
+          const code = document.getElementById('code').value.trim();
+
+          if (!token || !code) {
+            showAlert('Por favor, preencha todos os campos.');
+            return;
+          }
+
+          if (code.length !== 6) {
+            showAlert('O código deve ter 6 dígitos.');
+            return;
+          }
+
+          setLoading(true);
+
+          try {
+            const response = await fetch('/auth/verify-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ token, code }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              showAlert(
+                data.message || 'Email verificado com sucesso! 🎉',
+                'success',
+              );
+
+              // Redireciona para login após 2 segundos
+              setTimeout(() => {
+                window.location.href = '/auth/login';
+              }, 2000);
+            } else {
+              showAlert(
+                data.message || 'Erro na verificação. Verifique os dados.',
+              );
+            }
+          } catch (error) {
+            showAlert('Erro de conexão. Tente novamente.');
+            console.error('Erro:', error);
+          } finally {
+            setLoading(false);
+          }
+        });
+
+      // Reenviar email
+      document
+        .getElementById('resendLink')
+        .addEventListener('click', async (e) => {
+          e.preventDefault();
+
+          const email = prompt('Digite seu email para reenviar o código:');
+          if (!email) return;
+
+          // Validação básica de email
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            showAlert('Por favor, digite um email válido.');
+            return;
+          }
+
+          try {
+            const response = await fetch('/auth/resend-verification', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              showAlert(
+                'Email reenviado com sucesso! Verifique sua caixa de entrada.',
+                'success',
+              );
+            } else {
+              showAlert(data.message || 'Erro ao reenviar email.');
+            }
+          } catch (error) {
+            showAlert('Erro de conexão. Tente novamente.');
+            console.error('Erro:', error);
+          }
+        });
+
+      // Formatação automática do código (apenas números)
+      document.getElementById('code').addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      });
+
+      // Auto-submit quando código tiver 6 dígitos
+      document.getElementById('code').addEventListener('input', (e) => {
+        if (e.target.value.length === 6) {
+          const token = document.getElementById('token').value.trim();
+          if (token) {
+            // Aguarda um pouco para o usuário ver o código completo
+            setTimeout(() => {
+              document
+                .getElementById('verificationForm')
+                .dispatchEvent(new Event('submit'));
+            }, 500);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model d_category {
+  id         Int          @id @default(autoincrement())
+  category   String
+  f_projects f_projects[]
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+}
+
+model d_status {
+  id         Int      @id @default(autoincrement())
+  status     String
+  f_user     f_user[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model d_roles {
+  id         Int      @id @default(autoincrement())
+  role       String
+  f_user     f_user[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model d_auth_method {
+  id         Int      @id @default(autoincrement())
+  method     String
+  f_user     f_user[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model d_technologies {
+  id         Int          @id @default(autoincrement())
+  tech       String
+  f_projects f_projects[]
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+}
+
+model f_user {
+  id                         Int                          @id @default(autoincrement())
+  username                   String?
+  email                      String                       @unique
+  password_hash              String
+  role                       d_roles                      @relation(fields: [role_id], references: [id])
+  role_id                    Int                          @default(2)
+  status                     d_status                     @relation(fields: [status_id], references: [id])
+  status_id                  Int                          @default(1)
+  auth_method                d_auth_method                @relation(fields: [auth_method_id], references: [id])
+  auth_method_id             Int
+  images                     f_images[]
+  f_profile_picture          f_profile_picture?
+  f_profile_pictureId        Int?
+  f_experience               f_experience[]
+  f_education                f_education[]
+  f_courses                  f_courses[]
+  f_projects                 f_projects[]
+  last_login                 DateTime?
+  online                     Int?
+  created_at                 DateTime                     @default(now())
+  updated_at                 DateTime                     @updatedAt
+  verified_email             Boolean                      @default(false)
+  email_verified_at          DateTime?
+  f_email_verification_token f_email_verification_token[]
+
+  @@map("users")
+}
+
+model f_email_verification_token {
+  id         String    @id @default(uuid())
+  token      String    @unique
+  code       String
+  user_id    Int
+  expires_at DateTime
+  is_used    Boolean   @default(false)
+  used_at    DateTime?
+  created_at DateTime  @default(now())
+
+  f_user f_user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+model f_images {
+  id                Int                @id @default(autoincrement())
+  description       String?
+  src_path          String
+  f_user            f_user             @relation(fields: [f_userId], references: [id])
+  f_userId          Int
+  f_projects        f_projects[]
+  f_profile_picture f_profile_picture?
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+}
+
+model f_profile_picture {
+  id         Int      @id @default(autoincrement())
+  f_user     f_user   @relation(fields: [f_userId], references: [id])
+  f_userId   Int      @unique
+  f_images   f_images @relation(fields: [f_imagesId], references: [id])
+  f_imagesId Int      @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model f_experience {
+  id           Int      @id @default(autoincrement())
+  tile         String
+  company_name String
+  description  String
+  start_date   DateTime
+  end_date     DateTime
+  f_user       f_user   @relation(fields: [f_userId], references: [id])
+  f_userId     Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+model f_education {
+  id               Int      @id @default(autoincrement())
+  tile             String
+  institution_name String
+  description      String
+  start_date       DateTime
+  end_date         DateTime
+  f_user           f_user   @relation(fields: [f_userId], references: [id])
+  f_userId         Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model f_courses {
+  id               Int      @id @default(autoincrement())
+  tile             String
+  institution_name String
+  description      String
+  start_date       DateTime
+  end_date         DateTime
+  f_user           f_user   @relation(fields: [f_userId], references: [id])
+  f_userId         Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model f_projects {
+  id           Int              @id @default(autoincrement())
+  tile         String
+  description  String
+  repo_url     String?
+  live_url     String?
+  f_user       f_user           @relation(fields: [f_userId], references: [id])
+  f_userId     Int
+  category     d_category       @relation(fields: [d_categoryId], references: [id])
+  d_categoryId Int
+  f_images     f_images         @relation(fields: [f_imagesId], references: [id])
+  f_imagesId   Int
+  technologies d_technologies[]
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
+}
