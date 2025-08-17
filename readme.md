@@ -16,7 +16,7 @@ A ideia é disponibilizar uma API para ser consumida em portfólios pessoais ou 
 - [X] CRUD de usuários
 - [X] Validação de usuario via Email
 - [X] Autenticação com JWT
-- [ ] CRUD de categorias
+- [x] CRUD de categorias
 - [ ] CRUD de imgs
 - [ ] CRUD de projetos
 - [ ] Autenticação com OAuth2 (Google)
@@ -40,9 +40,9 @@ portfolio-manager/
 
 🛣️ Roadmap
 
-- [ ] Finalizar CRUD de usuarios
-- [ ] Implementar autenticação via JWT
-- [ ] Finalizar CRUD de categorias
+- [x] Finalizar CRUD de usuarios
+- [x] Implementar autenticação via JWT
+- [x] Finalizar CRUD de categorias
 - [ ] Finalizar CRUD de imgs
 - [ ] Finalizar CRUD de projetos
 - [ ] Implementar autenticação via Google OAuth2
