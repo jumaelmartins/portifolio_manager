@@ -8,6 +8,12 @@ import { AuthMethodModule } from './modules/auth_method/auth_method.module';
 import { CategoryModule } from './modules/category/category.module';
 import { PrismaService } from './database/prisma.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { CoursesModule } from './modules/courses/courses.module';
+import { EducationModule } from './modules/education/education.module';
+import { TechnologiesModule } from './modules/technologies/technologies.module';
+import { ImagesModule } from './modules/images/images.module';
+import { UploadModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -16,7 +22,13 @@ import { AuthModule } from './modules/auth/auth.module';
     RolesModule,
     AuthMethodModule,
     CategoryModule,
-    AuthModule
+    AuthModule,
+    ProjectsModule,
+    CoursesModule,
+    EducationModule,
+    TechnologiesModule,
+    ImagesModule,
+    UploadModule
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
