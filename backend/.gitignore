@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+.env.development
+.env.production
+/uploads
 # Logs
 logs
 *.log
