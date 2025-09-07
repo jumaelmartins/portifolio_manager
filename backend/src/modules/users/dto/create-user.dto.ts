@@ -1,5 +1,6 @@
 import { IsEmail, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Optional } from '@nestjs/common';
 
 export enum UserRole {
   Admin = 1,
@@ -22,9 +23,4 @@ export class CreateUserDto {
     example: 'yourStrongP@s5w0rd',
   })
   password_hash: string;
-  role: object;
-  status: object;
-  auth_method: object;
-  online: number;
-  last_login: Date;
 }
