@@ -158,7 +158,7 @@ model f_courses {
 
 model f_projects {
   id           Int              @id @default(autoincrement())
-  tile         String
+  title        String           @unique
   description  String
   repo_url     String?
   live_url     String?
@@ -166,8 +166,8 @@ model f_projects {
   f_userId     Int
   category     d_category       @relation(fields: [d_categoryId], references: [id])
   d_categoryId Int
-  f_images     f_images         @relation(fields: [f_imagesId], references: [id])
-  f_imagesId   Int
+  f_images     f_images?        @relation(fields: [f_imagesId], references: [id])
+  f_imagesId   Int?
   technologies d_technologies[]
   created_at   DateTime         @default(now())
   updated_at   DateTime         @updatedAt
