@@ -132,9 +132,9 @@ model f_experience {
 
 model f_education {
   id               Int      @id @default(autoincrement())
-  tile             String
+  title             String
   institution_name String
-  description      String
+  description      String?
   start_date       DateTime
   end_date         DateTime
   f_user           f_user   @relation(fields: [f_userId], references: [id])
@@ -145,9 +145,9 @@ model f_education {
 
 model f_courses {
   id               Int      @id @default(autoincrement())
-  tile             String
+  title             String
   institution_name String
-  description      String
+  description      String?
   start_date       DateTime
   end_date         DateTime
   f_user           f_user   @relation(fields: [f_userId], references: [id])
