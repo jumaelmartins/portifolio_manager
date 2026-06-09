@@ -3,7 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, randomInt } from 'crypto';
@@ -19,20 +19,15 @@ export class EmailVerificationService {
   async generateVerificationToken(
     user_id: number,
   ): Promise<{ token: string; code: string }> {
-    // Gera token único (UUID-like)
+
     const token = randomBytes(32).toString('hex');
-
-    // Gera código de 6 dígitos
     const code = randomInt(100000, 999999).toString();
-
-    // Tempo de expiração (30 minutos)
     const expirationMinutes = this.configService.get<number>(
       'EMAIL_VERIFICATION_EXPIRATION',
       30,
     );
     const expires_at = new Date(Date.now() + expirationMinutes * 60 * 1000);
 
-    // Invalida tokens anteriores do usuário (opcional)
     await this.prisma.f_email_verification_token.updateMany({
       where: {
         user_id,
@@ -42,7 +37,6 @@ export class EmailVerificationService {
       data: { is_used: true },
     });
 
-    // Cria novo token
     await this.prisma.f_email_verification_token.create({
       data: {
         token,
@@ -55,29 +49,22 @@ export class EmailVerificationService {
     return { token, code };
   }
 
-  /**
-   * Envia email de verificação para o usuário
-   */
   async sendVerificationEmail(user_id: number): Promise<boolean> {
     const user = await this.prisma.f_user.findUnique({
       where: { id: user_id },
     });
 
     if (!user) {
-      throw new NotFoundException('user not fount');
+      throw new NotFoundException('user not found');
     }
-
     if (user.verified_email) {
       throw new BadRequestException('email already verified');
     }
 
-    // Gera novo token
     const { token, code } = await this.generateVerificationToken(user_id);
 
-    // Extrai nome do email (parte antes do @)
     const userName = user.email.split('@')[0];
 
-    // Envia email
     const emailSent = await this.emailService.sendVerificationEmail(
       user.email,
       userName,
@@ -92,11 +79,8 @@ export class EmailVerificationService {
     return true;
   }
 
-  /**
-   * Verifica o código/token de verificação
-   */
   async verifyEmailWithCode(token: string, code: string): Promise<boolean> {
-    // Busca o token no banco
+
     const verificationToken =
       await this.prisma.f_email_verification_token.findUnique({
         where: { token },
@@ -107,22 +91,18 @@ export class EmailVerificationService {
       throw new BadRequestException('invalid verification token');
     }
 
-    // Verifica se o token já foi usado
     if (verificationToken.is_used) {
       throw new BadRequestException('token already in use');
     }
 
-    // Verifica se o token expirou
     if (verificationToken.expires_at < new Date()) {
       throw new BadRequestException('expired token');
     }
 
-    // Verifica se o código está correto
     if (verificationToken.code !== code) {
       throw new BadRequestException('invalid code');
     }
 
-    // Marca o token como usado
     await this.prisma.f_email_verification_token.update({
       where: { id: verificationToken.id },
       data: {
@@ -131,7 +111,6 @@ export class EmailVerificationService {
       },
     });
 
-    // Ativa e verifica o usuário
     await this.prisma.f_user.update({
       where: { id: verificationToken.user_id },
       data: {
@@ -141,7 +120,6 @@ export class EmailVerificationService {
       },
     });
 
-    // Envia email de boas-vindas
     const userName = verificationToken.f_user.email.split('@')[0];
     await this.emailService.sendWelcomeEmail(
       verificationToken.f_user.email,
@@ -151,9 +129,6 @@ export class EmailVerificationService {
     return true;
   }
 
-  /**
-   * Verifica apenas com o token (sem código)
-   */
   async verifyEmailWithToken(token: string): Promise<boolean> {
     const verificationToken =
       await this.prisma.f_email_verification_token.findUnique({
@@ -172,15 +147,9 @@ export class EmailVerificationService {
     if (verificationToken.expires_at < new Date()) {
       throw new BadRequestException('expired token');
     }
-
-    // Para verificação apenas com token, retorna as informações
-    // mas não marca como verificado (usuário ainda precisa do código)
     return false;
   }
 
-  /**
-   * Reenviar email de verificação
-   */
   async resendVerificationEmail(email: string): Promise<boolean> {
     const user = await this.prisma.f_user.findUnique({
       where: { email },
@@ -194,7 +163,6 @@ export class EmailVerificationService {
       throw new BadRequestException('email already verified');
     }
 
-    // Verifica se há um token recente (evita spam)
     const recentToken = await this.prisma.f_email_verification_token.findFirst({
       where: {
         user_id: user.id,
@@ -211,9 +179,6 @@ export class EmailVerificationService {
     return await this.sendVerificationEmail(user.id);
   }
 
-  /**
-   * Limpa tokens expirados (job para executar periodicamente)
-   */
   async cleanupExpiredTokens(): Promise<number> {
     const result = await this.prisma.f_email_verification_token.deleteMany({
       where: {
@@ -224,9 +189,6 @@ export class EmailVerificationService {
     return result.count;
   }
 
-  /**
-   * Verifica status de verificação de um usuário
-   */
   async getVerificationStatus(user_id: number) {
     const user = await this.prisma.f_user.findUnique({
       where: { id: user_id },

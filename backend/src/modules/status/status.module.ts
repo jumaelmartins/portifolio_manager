@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { StatusService } from './status.service';
 import { StatusController } from './status.controller';
-import { PrismaService } from 'src/database/prisma.service';
-import { HashService } from 'src/common/services/hash.service';
+import { StatusRepository } from './repository/status.repository';
+import { StatusInMemoryRepository } from './repository/status-in-memor.repository';
 
 @Module({
   controllers: [StatusController],
-  providers: [StatusService, PrismaService],
+  providers: [StatusService, StatusRepository, StatusInMemoryRepository],
 })
 export class StatusModule {}

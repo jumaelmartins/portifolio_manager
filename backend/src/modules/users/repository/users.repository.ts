@@ -1,8 +1,6 @@
 import { Prisma, f_user } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
-import { CreateUserDto } from '../dto/create-user.dto';
 import { Injectable } from '@nestjs/common';
-import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -48,12 +46,37 @@ export class UserRepository {
   async findById(id: number): Promise<Omit<f_user, 'password_hash'> | null> {
     const user = await this.prisma.f_user.findUnique({
       where: { id },
+      omit: {
+        password_hash: true,
+      },
+      include: {
+        role: true,
+        status: true,
+        images: true,
+        f_projects: true,
+        f_courses: true,
+        f_profile_picture: true,
+        f_education: true,
+        f_experience: true,
+      },
     });
 
     return user;
   }
-  async findAll(): Promise<Omit<f_user[], 'password_hash'> | null> {
-    return await this.prisma.f_user.findMany();
+  async findAll(): Promise<Omit<f_user, 'password_hash'>[] | null> {
+    return await this.prisma.f_user.findMany({
+      omit: { password_hash: true },
+      include: {
+        role: true,
+        status: true,
+        images: true,
+        f_projects: true,
+        f_courses: true,
+        f_profile_picture: true,
+        f_education: true,
+        f_experience: true,
+      },
+    });
   }
 
   async delete(id: number): Promise<void> {

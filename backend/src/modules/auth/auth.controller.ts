@@ -9,24 +9,25 @@ import {
   Request,
   Get,
   BadRequestException,
-  Render,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GoogleOauthGuard } from './guards/google-oauth.guard';
 import { UpdatePasswordDto } from '../users/dto/update-password-user.dto';
-import { HashService } from '../../common/services/hash.service';
 import { EmailVerificationService } from './email_verification_token.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { UserStatus } from 'src/utils/types';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private hashService: HashService,
     private emailVerificationService: EmailVerificationService,
   ) {}
 
@@ -35,7 +36,7 @@ export class AuthController {
   async login(@Body() loginUserDto: LoginUserDto) {
     const user = await this.usersService.validateUser(
       loginUserDto.email,
-      loginUserDto.password_hash,
+      loginUserDto.password,
     );
 
     if (!user) {
@@ -53,11 +54,15 @@ export class AuthController {
     }
 
     // Verifica se a conta está ativa
-    if (user.status_id !== 2) {
+    if (user.status_id !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('inactive account. please contact admin');
     }
 
-    const payload = { sub: user.id, email: user.email };
+    const payload = {
+      sub: user.id,
+      role: user.role_id,
+      status: user.status_id,
+    };
     const token = this.jwtService.sign(payload);
 
     return {
@@ -65,12 +70,6 @@ export class AuthController {
       user,
       access_token: token,
     };
-  }
-
-  @Get('verify-email')
-  @Render('verify-email')
-  root() {
-    return { message: 'Hello world!' };
   }
 
   @Post('verify-email')
@@ -128,19 +127,6 @@ export class AuthController {
     };
   }
 
-  /**
-   * Obtém perfil do usuário autenticado
-   */
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  async getProfile(@Request() req) {
-    const user = await this.usersService.findOne(req.user.sub);
-    return {
-      message: 'Perfil obtido com sucesso',
-      user,
-    };
-  }
-
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -148,32 +134,36 @@ export class AuthController {
     @Request() req,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
-    const user = await this.usersService.findByEmailWithPassword(
-      req.user.email,
-    );
-
-    if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
-    }
-
-    // Valida senha atual
-    const isCurrentPasswordValid = await this.hashService.comparePassword(
-      updatePasswordDto.current_password,
-      user.password_hash,
-    );
-
-    if (!isCurrentPasswordValid) {
-      throw new UnauthorizedException('Senha atual inválida');
-    }
-
-    // Atualiza senha
-    await this.usersService.updatePassword(
-      user.id,
-      updatePasswordDto.new_password,
-    );
+    await this.usersService.updatePassword(req.user.email, updatePasswordDto);
 
     return {
-      message: 'Senha atualizada com sucesso',
+      message: 'Password updated!',
+    };
+  }
+
+  @Get('google')
+  @UseGuards(GoogleOauthGuard)
+  async googleAuth() {
+    // Inicia o fluxo OAuth2 — o guard redireciona para o Google automaticamente
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleOauthGuard)
+  async googleAuthCallback(@Request() req, @Res() res: Response) {
+    const user = req.user;
+    const payload = { sub: user.id, role: user.role_id, status: user.status_id };
+    const token = this.jwtService.sign(payload);
+
+    // Redireciona com o token na query string — frontend deve capturar e salvar
+    return res.redirect(`/auth/google/success?token=${token}`);
+  }
+
+  @Get('google/success')
+  @UseGuards(JwtAuthGuard)
+  googleSuccess(@Request() req) {
+    return {
+      message: 'Google OAuth2 login successful',
+      user: req.user,
     };
   }
 }

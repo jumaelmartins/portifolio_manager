@@ -18,7 +18,6 @@ export class TechnologiesService {
     if (tech) {
       throw new ConflictException('Technology Already Exists');
     }
-
     const newTech = { ...data, tech: data.tech.toLowerCase() };
 
     return this.technologiesRepository.create(newTech);

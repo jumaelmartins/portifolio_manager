@@ -1,26 +1,54 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { RolesRepository } from './repository/roles.repository';
+import { d_roles } from '@prisma/client';
 
 @Injectable()
 export class RolesService {
-  create(createRoleDto: CreateRoleDto) {
-    return 'This action adds a new role';
+  constructor(private readonly rolesRepository: RolesRepository) {}
+
+  async create(createRoleDto: CreateRoleDto): Promise<d_roles | null> {
+    const { role } = createRoleDto;
+    const roleExist = await this.rolesRepository.findByRole(role);
+    if (roleExist) {
+      throw new ConflictException('Role already exists');
+    }
+    return await this.rolesRepository.create(createRoleDto);
   }
 
-  findAll() {
-    return `This action returns all roles`;
+  async findAll() {
+    return await this.rolesRepository.findAll();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} role`;
+  async findOne(id: number): Promise<d_roles | null> {
+    const role = await this.rolesRepository.findById(id);
+    if (!role) {
+      throw new NotFoundException(`Role wit not found`);
+    }
+
+    return role;
   }
 
-  update(id: number, updateRoleDto: UpdateRoleDto) {
-    return `This action updates a #${id} role`;
+  async update(id: number, updateRoleDto: UpdateRoleDto): Promise<d_roles> {
+    const role = await this.rolesRepository.findById(id);
+    if (!role) {
+      throw new NotFoundException(`Role wit not found`);
+    }
+    const updatedRole = await this.rolesRepository.update(id, updateRoleDto);
+
+    return updatedRole;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} role`;
+  async remove(id: number): Promise<void> {
+    const role = await this.rolesRepository.findById(id);
+    if (!role) {
+      throw new NotFoundException(`Role wit not found`);
+    }
+    await this.rolesRepository.delete(id);
   }
 }

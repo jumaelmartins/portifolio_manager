@@ -1,43 +1,40 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { PrismaService } from 'src/database/prisma.service';
-import { Prisma, d_category } from '@prisma/client';
+import { d_category } from '@prisma/client';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { CategoryRepository } from './repository/category.repository';
 
 @Injectable()
 export class CategoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private categoryRepository: CategoryRepository) {}
 
-  async create(data: Prisma.d_categoryCreateInput): Promise<d_category> {
+  async create(data: CreateCategoryDto): Promise<d_category | null> {
     const { category } = data;
-
-    const categoryExist = await this.prisma.d_category.findUnique({
-      where: {
-        category: category.toLowerCase(),
-      },
-    });
-
+    const categoryExist = await this.categoryRepository.findByCategory(
+      category.toLowerCase(),
+    );
     if (categoryExist) {
       throw new ConflictException('Category already exist');
     }
-
-    const newCategory = await this.prisma.d_category.create({
-      data: { category: category.toLowerCase() },
+    const newCategory = await this.categoryRepository.create({
+      category: category.toLowerCase(),
     });
-
     return newCategory;
   }
 
-  async findAll(): Promise<d_category[]> {
-    return this.prisma.d_category.findMany();
+  async findAll(): Promise<d_category[] | null> {
+    return this.categoryRepository.findAll();
   }
 
   async findOne(id: number): Promise<d_category> {
-    const category = await this.prisma.d_category.findUnique({
-      where: { id },
-    });
+    const category = await this.categoryRepository.findById(id);
+
     if (!category) {
-      throw new Error('Invalid Category');
+      throw new NotFoundException('Invalid Category');
     }
     return category;
   }
@@ -45,25 +42,20 @@ export class CategoryService {
   async update(
     id: number,
     updateCategoryDto: UpdateCategoryDto,
-  ): Promise<d_category> {
-    const category = await this.prisma.d_category.findUnique({ where: { id } });
+  ): Promise<d_category | null> {
+    const category = await this.categoryRepository.findById(id);
 
     if (!category) {
-      throw new Error('Invalid Category');
+      throw new NotFoundException('Invalid Category');
     }
-    const updateCategory = await this.prisma.d_category.update({
-      where: { id },
-      data: {
-        category: updateCategoryDto.category.toLowerCase(),
-      },
+    const updateCategory = await this.categoryRepository.update(id, {
+      category: updateCategoryDto.category.toLowerCase(),
     });
 
     return updateCategory;
   }
 
   async remove(id: number) {
-    await this.prisma.d_category.delete({ where: { id } });
-
-    return null;
+    await this.categoryRepository.delete(id);
   }
 }

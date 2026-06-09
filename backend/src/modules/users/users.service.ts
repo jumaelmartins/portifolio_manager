@@ -2,14 +2,16 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { f_user } from '@prisma/client';
 import { HashService } from '../../common/services/hash.service';
 import { UserRepository } from './repository/users.repository';
-import { CreateUserDto, UserRole } from './dto/create-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password-user.dto';
+import { UserStatus } from '../../utils/types';
 
 @Injectable()
 export class UsersService {
@@ -19,17 +21,16 @@ export class UsersService {
   ) {}
 
   async create(data: CreateUserDto): Promise<Omit<f_user, 'password_hash'>> {
-    const { email, password_hash } = data;
+    const { email, password } = data;
 
     const existingUser = await this.userRepository.findByEmail(email);
 
     if (existingUser) {
       throw new ConflictException('Email already exist');
     }
-    const hashedPassword = await this.hashService.hashPassword(password_hash);
+    const hashedPassword = await this.hashService.hashPassword(password);
 
     const newUser = await this.userRepository.create({
-      ...data,
       username:
         data.username?.toLowerCase() ||
         data.email.split('@')[0].toLocaleLowerCase(),
@@ -43,16 +44,12 @@ export class UsersService {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
     return user;
   }
-  async findAll(): Promise<Omit<f_user[], 'password_hash'> | null> {
+  async findAll(): Promise<Array<Omit<f_user, 'password_hash'>> | null> {
     const users = await this.userRepository.findAll();
-
-    if (!users) {
-      throw new UnauthorizedException('Users not found');
-    }
     return users;
   }
 
@@ -63,7 +60,7 @@ export class UsersService {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     return await this.userRepository.update(id, {
@@ -77,10 +74,7 @@ export class UsersService {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
-      throw new ForbiddenException('User not found');
-    }
-    if (user?.role_id === UserRole.Admin) {
-      throw new UnauthorizedException("You can't delete user admin");
+      throw new NotFoundException('User not found');
     }
 
     await this.userRepository.delete(id);
@@ -91,8 +85,8 @@ export class UsersService {
     password: string,
   ): Promise<Omit<f_user, 'password_hash'> | null> {
     const user = await this.userRepository.findByEmailWithPassword(email);
-    if (!user || user.status_id !== 2) {
-      throw new ForbiddenException('user not exist or inactive');
+    if (!user || user.status_id !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('user not exist or inactive');
     }
     const isPasswordValid = await this.hashService.comparePassword(
       password,
@@ -114,7 +108,7 @@ export class UsersService {
   ): Promise<void> {
     const user = await this.userRepository.findByEmailWithPassword(email);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const isCurrentPasswordValid = await this.hashService.comparePassword(

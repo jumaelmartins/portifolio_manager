@@ -4,9 +4,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
 import { StatusModule } from './modules/status/status.module';
 import { RolesModule } from './modules/roles/roles.module';
-import { AuthMethodModule } from './modules/auth_method/auth_method.module';
 import { CategoryModule } from './modules/category/category.module';
-import { PrismaService } from './database/prisma.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { CoursesModule } from './modules/courses/courses.module';
@@ -14,13 +12,20 @@ import { EducationModule } from './modules/education/education.module';
 import { TechnologiesModule } from './modules/technologies/technologies.module';
 import { ImagesModule } from './modules/images/images.module';
 import { UploadModule } from './modules/uploads/uploads.module';
+import { ExperienceModule } from './modules/experience/experience.module';
+import { PublicModule } from './modules/public/public.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { CustomSectionsModule } from './modules/custom-sections/custom-sections.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
+    DatabaseModule,
     UsersModule,
     StatusModule,
     RolesModule,
-    AuthMethodModule,
     CategoryModule,
     AuthModule,
     ProjectsModule,
@@ -28,9 +33,19 @@ import { UploadModule } from './modules/uploads/uploads.module';
     EducationModule,
     TechnologiesModule,
     ImagesModule,
-    UploadModule
+    UploadModule,
+    ExperienceModule,
+    PublicModule,
+    AuditModule,
+    CustomSectionsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+  ],
 })
 export class AppModule {}

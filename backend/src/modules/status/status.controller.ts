@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { StatusService } from './status.service';
 import { CreateStatusDto } from './dto/create-status.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
+import { UserOwnershipGuard } from '../auth/guards/user-ownership.guard';
 
+@UseGuards(JwtAuthGuard, AdminGuard, UserOwnershipGuard)
 @Controller('status')
 export class StatusController {
   constructor(private readonly statusService: StatusService) {}

@@ -1,34 +1,42 @@
-import { Injectable } from '@nestjs/common';
-import { CreateStatusDto } from './dto/create-status.dto';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { UpdateStatusDto } from './dto/update-status.dto';
-import { PrismaService } from 'src/database/prisma.service';
-import { Prisma, d_status } from '@prisma/client';
+import { StatusRepository } from './repository/status.repository';
+import { CreateStatusDto } from './dto/create-status.dto';
 
 @Injectable()
 export class StatusService {
-  constructor(private prisma: PrismaService) {}
-
-  async create(data: Prisma.d_statusCreateInput) {
-    return await this.prisma.d_status.create({
-      data: {
-        status: data.status.toLowerCase(),
-      },
+  constructor(private status: StatusRepository) {}
+  async create(data: CreateStatusDto) {
+    const existingStatus = await this.status.findByStatus(data.status);
+    if (existingStatus) {
+      throw new ConflictException('Status already exists');
+    }
+    return await this.status.create({
+      status: data.status.toLowerCase(),
     });
   }
 
-  findAll() {
-    return `This action returns all status`;
+  async findAll() {
+    return await this.status.findAll();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} status`;
+  async findOne(id: number) {
+    return await this.status.findById(id);
   }
 
-  update(id: number, updateStatusDto: UpdateStatusDto) {
-    return `This action updates a #${id} status`;
+  async update(id: number, updateStatusDto: UpdateStatusDto) {
+    const existingStatus = await this.status.findById(id);
+    if (!existingStatus) {
+      throw new ConflictException('Status not found');
+    }
+    return await this.status.update(id, updateStatusDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} status`;
+  async remove(id: number) {
+    const existingStatus = await this.status.findById(id);
+    if (!existingStatus) {
+      throw new ConflictException('Status not found');
+    }
+    return await this.status.delete(id);
   }
 }

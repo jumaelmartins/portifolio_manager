@@ -3,11 +3,10 @@
 
 generator client {
   provider = "prisma-client-js"
-  // output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -69,6 +68,8 @@ model f_user {
   f_education                f_education[]
   f_courses                  f_courses[]
   f_projects                 f_projects[]
+  custom_sections            custom_section[]
+  audit_logs                 audit_log[]
   last_login                 DateTime?
   online                     Int?
   created_at                 DateTime                     @default(now())
@@ -123,7 +124,8 @@ model f_experience {
   company_name String
   description  String
   start_date   DateTime
-  end_date     DateTime
+  end_date     DateTime?
+  current      Boolean  @default(false)
   f_user       f_user   @relation(fields: [f_userId], references: [id])
   f_userId     Int
   created_at   DateTime @default(now())
@@ -131,29 +133,31 @@ model f_experience {
 }
 
 model f_education {
-  id               Int      @id @default(autoincrement())
-  title             String
+  id               Int       @id @default(autoincrement())
+  title            String
   institution_name String
   description      String?
   start_date       DateTime
-  end_date         DateTime
-  f_user           f_user   @relation(fields: [f_userId], references: [id])
+  end_date         DateTime?
+  current          Boolean   @default(false)
+  f_user           f_user    @relation(fields: [f_userId], references: [id])
   f_userId         Int
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
 }
 
 model f_courses {
-  id               Int      @id @default(autoincrement())
-  title             String
+  id               Int       @id @default(autoincrement())
+  title            String
   institution_name String
   description      String?
   start_date       DateTime
-  end_date         DateTime
-  f_user           f_user   @relation(fields: [f_userId], references: [id])
+  end_date         DateTime?
+  current          Boolean   @default(false)
+  f_user           f_user    @relation(fields: [f_userId], references: [id])
   f_userId         Int
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
 }
 
 model f_projects {
@@ -171,4 +175,56 @@ model f_projects {
   technologies d_technologies[]
   created_at   DateTime         @default(now())
   updated_at   DateTime         @updatedAt
+}
+
+// =====================
+// Audit Log
+// =====================
+
+model audit_log {
+  id          Int      @id @default(autoincrement())
+  user_id     Int?
+  entity_type String
+  entity_id   Int
+  action      String   // "CREATE" | "UPDATE" | "DELETE"
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?
+  created_at  DateTime @default(now())
+
+  f_user f_user? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// =====================
+// Custom Sections
+// =====================
+
+model custom_section {
+  id           Int                   @id @default(autoincrement())
+  name         String
+  description  String?
+  icon         String?
+  field_schema Json
+  order        Int                   @default(0)
+  f_user       f_user                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id      Int
+  items        custom_section_item[]
+  created_at   DateTime              @default(now())
+  updated_at   DateTime              @updatedAt
+
+  @@map("custom_sections")
+}
+
+model custom_section_item {
+  id         Int            @id @default(autoincrement())
+  data       Json
+  order      Int            @default(0)
+  section    custom_section @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  section_id Int
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+
+  @@map("custom_section_items")
 }

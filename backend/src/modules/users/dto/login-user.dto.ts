@@ -4,5 +4,5 @@ export class LoginUserDto {
   @IsEmail()
   email: string;
   @IsNotEmpty()
-  password_hash: string;
+  password: string;
 }
