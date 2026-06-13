@@ -12,6 +12,11 @@ function CacheProbe() {
 }
 
 describe("renderWithProviders", () => {
+  it("renders children inside the application providers", () => {
+    renderWithProviders(<p>provider ready</p>);
+    expect(screen.getByText("provider ready")).toBeInTheDocument();
+  });
+
   it("preserves and exposes the query client across rerenders", () => {
     const result = renderWithProviders(<CacheProbe />);
     const initialQueryClient = result.queryClient;
