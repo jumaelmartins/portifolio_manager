@@ -5,6 +5,10 @@ export type OauthHandoffInput = {
   nonce: string;
 };
 
+export function isValidOauthState(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function escapeAttribute(value: string): string {
   return value
     .replaceAll('&', '&amp;')

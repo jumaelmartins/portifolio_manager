@@ -24,7 +24,7 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { type AuthenticatedRequest, UserStatus } from 'src/utils/types';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { renderOauthHandoff } from './oauth-handoff';
+import { isValidOauthState, renderOauthHandoff } from './oauth-handoff';
 import { ActiveUserGuard } from './guards/active-user.guard';
 
 type GoogleOauthCallbackRequest = {
@@ -174,7 +174,7 @@ export class AuthController {
     @Res() res: Response,
   ) {
     const state = req.query?.state;
-    if (typeof state !== 'string') {
+    if (!isValidOauthState(state)) {
       throw new BadRequestException('Missing OAuth state');
     }
 

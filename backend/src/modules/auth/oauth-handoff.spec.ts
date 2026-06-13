@@ -1,4 +1,17 @@
-import { renderOauthHandoff } from './oauth-handoff';
+import { isValidOauthState, renderOauthHandoff } from './oauth-handoff';
+
+describe('isValidOauthState', () => {
+  it.each([undefined, '', '   '])(
+    'rejects missing or empty state: %p',
+    (state) => {
+      expect(isValidOauthState(state)).toBe(false);
+    },
+  );
+
+  it('accepts a non-empty state', () => {
+    expect(isValidOauthState('oauth-state')).toBe(true);
+  });
+});
 
 describe('renderOauthHandoff', () => {
   it('posts the token and state without placing them in the action URL', () => {
