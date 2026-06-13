@@ -4,3 +4,13 @@ export function parseAllowedOrigins(value?: string): string[] {
     .map((origin) => origin.trim())
     .filter(Boolean);
 }
+
+type HeaderResponse = {
+  setHeader(name: string, value: string): unknown;
+};
+
+export function setUploadSecurityHeaders(response: HeaderResponse): void {
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  response.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+  response.setHeader('Referrer-Policy', 'no-referrer');
+}

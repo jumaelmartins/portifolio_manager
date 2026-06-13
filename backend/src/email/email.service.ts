@@ -17,22 +17,19 @@ export class EmailService {
       return;
     }
 
-    // this.transporter = nodemailer.createTransport({
-    //   service: 'gmail',
-    //   auth: {
-    //     user: this.configService.get<string>('EMAIL_USER'),
-    //     pass: this.configService.get<string>('EMAIL_PASSWORD'),
-    //   },
-    // });
+    const secureConfig = this.configService.get<string | boolean>(
+      'EMAIL_SECURE',
+      false,
+    );
 
     this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST_DEV,
-      port: 2525,
+      host: this.configService.get<string>('EMAIL_HOST_DEV'),
+      port: Number(this.configService.get('EMAIL_PORT_DEV', 2525)),
+      secure: secureConfig === true || secureConfig === 'true',
       auth: {
-        user: process.env.EMAIL_USERNAME_DEV,
-        pass: process.env.EMAIL_PASSWORD_DEV,
+        user: this.configService.get<string>('EMAIL_USERNAME_DEV'),
+        pass: this.configService.get<string>('EMAIL_PASSWORD_DEV'),
       },
-      ignoreTLS: true,
     });
   }
 
@@ -41,6 +38,7 @@ export class EmailService {
     userName: string,
     verificationCode: string,
     verificationToken: string,
+    expiresInSeconds: number,
   ): Promise<boolean> {
     try {
       const frontendUrl = this.configService.get<string>(
@@ -56,22 +54,22 @@ export class EmailService {
         userName,
         verificationCode,
         verificationUrl,
+        expiresInSeconds,
       );
 
       const mailOptions = {
-        from: {
-          name: 'Sistema de Autenticação',
-          address: this.configService.get<string>(
-            'EMAIL_FROM',
-            'noreply@sistema.com',
-          ),
-        },
+        from: this.configService.get<string>(
+          'EMAIL_FROM',
+          'Portfolio Manager <noreply@example.com>',
+        ),
         to: email,
         subject: '🔐 Confirme seu email - Código de Verificação',
         html: htmlContent,
       };
 
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = (await this.transporter.sendMail(mailOptions)) as {
+        messageId?: string;
+      };
 
       this.logger.log(`Email de verificação enviado para: ${email}`);
       this.logger.debug(`Message ID: ${result.messageId}`);
@@ -87,7 +85,10 @@ export class EmailService {
     userName: string,
     code: string,
     verificationUrl: string,
+    expiresInSeconds: number,
   ): string {
+    const expirationMinutes = Math.ceil(expiresInSeconds / 60);
+
     return `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -118,7 +119,7 @@ export class EmailService {
             <div class="code-box">
                 <p><strong>Seu código de verificação:</strong></p>
                 <div class="code">${code}</div>
-                <p><small>Este código expira em 30 minutos</small></p>
+                <p><small>Este código expira em ${expirationMinutes} minutos</small></p>
             </div>
             
             <p>Você pode:</p>
@@ -140,7 +141,7 @@ export class EmailService {
             <div class="warning">
                 <strong>⚠️ Importante:</strong>
                 <ul>
-                    <li>Este código expira em <strong>30 minutos</strong></li>
+                    <li>Este código expira em <strong>${expirationMinutes} minutos</strong></li>
                     <li>Você só pode usar este código uma vez</li>
                     <li>Se não foi você que se cadastrou, ignore este email</li>
                 </ul>
@@ -159,13 +160,10 @@ export class EmailService {
   async sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
     try {
       const mailOptions = {
-        from: {
-          name: 'Sistema de Autenticação',
-          address: this.configService.get<string>(
-            'EMAIL_FROM',
-            'noreply@sistema.com',
-          ),
-        },
+        from: this.configService.get<string>(
+          'EMAIL_FROM',
+          'Portfolio Manager <noreply@example.com>',
+        ),
         to: email,
         subject: '🎉 Bem-vindo! Sua conta foi verificada com sucesso',
         html: `

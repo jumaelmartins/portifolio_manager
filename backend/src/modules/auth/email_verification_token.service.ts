@@ -17,6 +17,9 @@ export type GeneratedVerificationChallenge = VerificationChallenge & {
   code: string;
 };
 
+export const MAX_VERIFICATION_ATTEMPTS = 5;
+export const MAX_VERIFICATION_CHALLENGES_PER_HOUR = 5;
+
 @Injectable()
 export class EmailVerificationService {
   constructor(
@@ -61,9 +64,7 @@ export class EmailVerificationService {
     };
   }
 
-  async sendVerificationEmail(
-    user_id: number,
-  ): Promise<VerificationChallenge> {
+  async sendVerificationEmail(user_id: number): Promise<VerificationChallenge> {
     const user = await this.prisma.f_user.findUnique({
       where: { id: user_id },
     });
@@ -85,6 +86,7 @@ export class EmailVerificationService {
       userName,
       code,
       token,
+      expiresInSeconds,
     );
 
     if (!emailSent) {
@@ -95,7 +97,6 @@ export class EmailVerificationService {
   }
 
   async verifyEmailWithCode(token: string, code: string): Promise<boolean> {
-
     const verificationToken =
       await this.prisma.f_email_verification_token.findUnique({
         where: { token },
@@ -114,17 +115,45 @@ export class EmailVerificationService {
       throw new BadRequestException('expired token');
     }
 
+    if (verificationToken.failed_attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      throw new BadRequestException('too many verification attempts');
+    }
+
     if (verificationToken.code !== code) {
+      const failedAttempt =
+        await this.prisma.f_email_verification_token.updateMany({
+          where: {
+            id: verificationToken.id,
+            is_used: false,
+            failed_attempts: { lt: MAX_VERIFICATION_ATTEMPTS },
+          },
+          data: {
+            failed_attempts: { increment: 1 },
+          },
+        });
+
+      if (failedAttempt.count === 0) {
+        throw new BadRequestException('too many verification attempts');
+      }
       throw new BadRequestException('invalid code');
     }
 
-    await this.prisma.f_email_verification_token.update({
-      where: { id: verificationToken.id },
+    const consumed = await this.prisma.f_email_verification_token.updateMany({
+      where: {
+        id: verificationToken.id,
+        is_used: false,
+        expires_at: { gt: new Date() },
+        failed_attempts: { lt: MAX_VERIFICATION_ATTEMPTS },
+      },
       data: {
         is_used: true,
         used_at: new Date(),
       },
     });
+
+    if (consumed.count !== 1) {
+      throw new BadRequestException('too many verification attempts');
+    }
 
     await this.prisma.f_user.update({
       where: { id: verificationToken.user_id },
@@ -165,9 +194,7 @@ export class EmailVerificationService {
     return false;
   }
 
-  async resendVerificationEmail(
-    email: string,
-  ): Promise<VerificationChallenge> {
+  async resendVerificationEmail(email: string): Promise<VerificationChallenge> {
     const user = await this.prisma.f_user.findUnique({
       where: { email },
     });
@@ -178,6 +205,18 @@ export class EmailVerificationService {
 
     if (user.verified_email) {
       throw new BadRequestException('email already verified');
+    }
+
+    const challengesLastHour =
+      await this.prisma.f_email_verification_token.count({
+        where: {
+          user_id: user.id,
+          created_at: { gt: new Date(Date.now() - 60 * 60 * 1000) },
+        },
+      });
+
+    if (challengesLastHour >= MAX_VERIFICATION_CHALLENGES_PER_HOUR) {
+      throw new BadRequestException('verification request limit exceeded');
     }
 
     const recentToken = await this.prisma.f_email_verification_token.findFirst({

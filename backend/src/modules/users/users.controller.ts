@@ -68,8 +68,11 @@ export class UsersController {
     },
   })
   async create(@Body() createUserDto: CreateUserDto) {
+    let createdUser: { id: number; email: string } | undefined;
+
     try {
       const user = await this.usersService.create(createUserDto);
+      createdUser = user;
       const verification =
         await this.emailVerificationService.sendVerificationEmail(user.id);
       return {
@@ -84,6 +87,13 @@ export class UsersController {
         verification,
       };
     } catch (e) {
+      if (createdUser) {
+        try {
+          await this.usersService.delete(createdUser.id);
+        } catch {
+          // Preserve the original registration failure for the client.
+        }
+      }
       if (e instanceof HttpException) throw e;
       throw new InternalServerErrorException();
     }

@@ -1,5 +1,10 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ExecutionContext,
+  Injectable,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { isValidOauthState } from '../oauth-handoff';
 
 @Injectable()
 export class GoogleOauthGuard extends AuthGuard('google') {
@@ -9,6 +14,10 @@ export class GoogleOauthGuard extends AuthGuard('google') {
       .getRequest<{ query?: { state?: unknown } }>();
     const state = request.query?.state;
 
-    return typeof state === 'string' ? { state } : {};
+    if (!isValidOauthState(state)) {
+      throw new BadRequestException('Missing OAuth state');
+    }
+
+    return { state };
   }
 }

@@ -82,14 +82,15 @@ model f_user {
 }
 
 model f_email_verification_token {
-  id         String    @id @default(uuid())
-  token      String    @unique
-  code       String
-  user_id    Int
-  expires_at DateTime
-  is_used    Boolean   @default(false)
-  used_at    DateTime?
-  created_at DateTime  @default(now())
+  id              String    @id @default(uuid())
+  token           String    @unique
+  code            String
+  user_id         Int
+  expires_at      DateTime
+  is_used         Boolean   @default(false)
+  used_at         DateTime?
+  failed_attempts Int       @default(0)
+  created_at      DateTime  @default(now())
 
   f_user f_user @relation(fields: [user_id], references: [id], onDelete: Cascade)
 

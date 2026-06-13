@@ -21,7 +21,7 @@ import { UpdatePasswordDto } from '../users/dto/update-password-user.dto';
 import { EmailVerificationService } from './email_verification_token.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import { type AuthenticatedRequest, UserStatus } from 'src/utils/types';
+import { type AuthenticatedRequest, UserStatus } from '../../utils/types';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { isValidOauthState, renderOauthHandoff } from './oauth-handoff';
@@ -179,7 +179,11 @@ export class AuthController {
     }
 
     const user = req.user;
-    const payload = { sub: user.id, role: user.role_id, status: user.status_id };
+    const payload = {
+      sub: user.id,
+      role: user.role_id,
+      status: user.status_id,
+    };
     const token = this.jwtService.sign(payload);
     const frontendUrl = this.configService.get<string>(
       'FRONTEND_URL',
@@ -197,6 +201,9 @@ export class AuthController {
       'Content-Security-Policy',
       `default-src 'none'; script-src 'nonce-${nonce}'; form-action ${frontendUrl}; base-uri 'none'; frame-ancestors 'none'`,
     );
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Referrer-Policy', 'no-referrer');
     return res.type('html').send(html);
   }
 
