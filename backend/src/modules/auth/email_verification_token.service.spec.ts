@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { EmailVerificationService } from './email_verification_token.service';
 
 describe('EmailVerificationService security limits', () => {
@@ -14,6 +14,8 @@ describe('EmailVerificationService security limits', () => {
   };
 
   let prisma: {
+    $transaction: jest.Mock;
+    $queryRaw: jest.Mock;
     f_email_verification_token: {
       findUnique: jest.Mock;
       updateMany: jest.Mock;
@@ -34,6 +36,8 @@ describe('EmailVerificationService security limits', () => {
 
   beforeEach(() => {
     prisma = {
+      $transaction: jest.fn(),
+      $queryRaw: jest.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       f_email_verification_token: {
         findUnique: jest.fn(),
         updateMany: jest.fn(),
@@ -46,6 +50,10 @@ describe('EmailVerificationService security limits', () => {
         update: jest.fn(),
       },
     };
+    prisma.$transaction.mockImplementation(
+      (callback: (transaction: typeof prisma) => Promise<unknown>) =>
+        callback(prisma),
+    );
     emailService = {
       sendVerificationEmail: jest.fn(),
       sendWelcomeEmail: jest.fn(),
@@ -101,9 +109,17 @@ describe('EmailVerificationService security limits', () => {
   });
 
   it('accepts only five failed attempts using an atomic counter constraint', async () => {
-    prisma.f_email_verification_token.findUnique.mockResolvedValue(
-      verificationToken,
-    );
+    prisma.f_email_verification_token.findUnique
+      .mockResolvedValueOnce(verificationToken)
+      .mockResolvedValueOnce(verificationToken)
+      .mockResolvedValueOnce(verificationToken)
+      .mockResolvedValueOnce(verificationToken)
+      .mockResolvedValueOnce(verificationToken)
+      .mockResolvedValueOnce(verificationToken)
+      .mockResolvedValueOnce({
+        ...verificationToken,
+        failed_attempts: 5,
+      });
     prisma.f_email_verification_token.updateMany
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 1 })
@@ -153,6 +169,15 @@ describe('EmailVerificationService security limits', () => {
       ...verificationToken,
       failed_attempts: 4,
     });
+    prisma.f_email_verification_token.findUnique
+      .mockResolvedValueOnce({
+        ...verificationToken,
+        failed_attempts: 4,
+      })
+      .mockResolvedValueOnce({
+        ...verificationToken,
+        failed_attempts: 5,
+      });
     prisma.f_email_verification_token.updateMany.mockImplementation(
       (query: unknown) => {
         consumptionQuery = query as typeof consumptionQuery;
@@ -207,11 +232,22 @@ describe('EmailVerificationService security limits', () => {
       },
     );
 
-    await expect(
-      service.resendVerificationEmail('owner@example.com'),
-    ).rejects.toThrow(
-      new BadRequestException('verification request limit exceeded'),
-    );
+    let caught: unknown;
+    try {
+      await service.resendVerificationEmail('owner@example.com');
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(HttpException);
+    const exception = caught as HttpException;
+    expect(exception.getStatus()).toBe(429);
+    const response = exception.getResponse() as {
+      message: string;
+      retryAfterSeconds: number;
+    };
+    expect(response.message).toBe('verification request limit exceeded');
+    expect(response.retryAfterSeconds).toBeGreaterThan(0);
 
     expect(countQuery).toBeDefined();
     const capturedCount = countQuery!;
@@ -222,6 +258,11 @@ describe('EmailVerificationService security limits', () => {
       },
     });
     expect(capturedCount.where.created_at.gt).toBeInstanceOf(Date);
-    expect(prisma.f_email_verification_token.findFirst).not.toHaveBeenCalled();
+    expect(prisma.f_email_verification_token.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { created_at: 'asc' },
+      }),
+    );
+    expect(prisma.f_email_verification_token.create).not.toHaveBeenCalled();
   });
 });

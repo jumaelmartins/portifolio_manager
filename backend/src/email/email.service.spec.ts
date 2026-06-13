@@ -61,4 +61,29 @@ describe('EmailService configuration', () => {
     expect(mailOptions.from).toBe('Portfolio Manager <noreply@example.com>');
     expect(mailOptions.html).toEqual(expect.stringContaining('6 minutos'));
   });
+
+  it('uses the frontend URL in the welcome email login link', async () => {
+    const values: Record<string, unknown> = {
+      EMAIL_TRANSPORT: 'json',
+      EMAIL_FROM: 'Portfolio Manager <noreply@example.com>',
+      FRONTEND_URL: 'https://portfolio.example',
+      APP_URL: 'https://legacy.example',
+    };
+    const configService = {
+      get: jest.fn((key: string, defaultValue?: unknown) => {
+        return values[key] ?? defaultValue;
+      }),
+    };
+    const service = new EmailService(configService as never);
+
+    await service.sendWelcomeEmail('owner@example.com', 'owner');
+
+    expect(sentMailOptions).toBeDefined();
+    expect(sentMailOptions!.html).toEqual(
+      expect.stringContaining('href="https://portfolio.example/auth/login"'),
+    );
+    expect(sentMailOptions!.html).not.toEqual(
+      expect.stringContaining('https://legacy.example'),
+    );
+  });
 });

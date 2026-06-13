@@ -13,6 +13,7 @@ import {
   Req,
   ForbiddenException,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,6 +29,8 @@ import { UserRoles, type AuthenticatedRequest } from '../../utils/types';
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(
     private readonly usersService: UsersService,
     private emailVerificationService: EmailVerificationService,
@@ -90,8 +93,11 @@ export class UsersController {
       if (createdUser) {
         try {
           await this.usersService.delete(createdUser.id);
-        } catch {
-          // Preserve the original registration failure for the client.
+        } catch (compensationError) {
+          this.logger.error(
+            `Failed to compensate user ${createdUser.id} after registration error`,
+            compensationError,
+          );
         }
       }
       if (e instanceof HttpException) throw e;
@@ -262,7 +268,7 @@ export class UsersController {
     const { role_id, status_id } = updateUserDto;
     if (
       (role_id || status_id) &&
-      Number(requestingUser.role) !== UserRoles.SYSADMIN
+      requestingUser.role !== String(UserRoles.SYSADMIN)
     ) {
       throw new ForbiddenException('Only ADMIN can change role or status');
     }

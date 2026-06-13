@@ -94,6 +94,7 @@ model f_email_verification_token {
 
   f_user f_user @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id, created_at], map: "email_verification_tokens_user_id_created_at_idx")
   @@map("email_verification_tokens")
 }
 

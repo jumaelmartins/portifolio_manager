@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { UsersController } from './users.controller';
 
 describe('UsersController registration security contracts', () => {
@@ -38,6 +38,9 @@ describe('UsersController registration security contracts', () => {
   });
 
   it('deletes a newly-created user and preserves the email HttpException', async () => {
+    const loggerError = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     const deliveryError = new BadRequestException(
       'error to send verification email',
     );
@@ -57,5 +60,10 @@ describe('UsersController registration security contracts', () => {
       }),
     ).rejects.toBe(deliveryError);
     expect(usersService.delete).toHaveBeenCalledWith(42);
+    expect(loggerError).toHaveBeenCalledWith(
+      'Failed to compensate user 42 after registration error',
+      expect.any(Error),
+    );
+    loggerError.mockRestore();
   });
 });

@@ -159,6 +159,10 @@ export class EmailService {
 
   async sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
     try {
+      const frontendUrl = this.configService.get<string>(
+        'FRONTEND_URL',
+        'http://localhost:3001',
+      );
       const mailOptions = {
         from: this.configService.get<string>(
           'EMAIL_FROM',
@@ -174,7 +178,7 @@ export class EmailService {
           </div>
           <p>Sua conta foi verificada com sucesso! Agora você pode aproveitar todos os recursos da nossa plataforma.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${this.configService.get<string>('APP_URL', 'http://localhost:3000')}/auth/login" 
+            <a href="${frontendUrl}/auth/login"
                style="background: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">
               🚀 Fazer Login
             </a>
