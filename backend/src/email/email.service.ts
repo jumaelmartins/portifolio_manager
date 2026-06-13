@@ -12,6 +12,11 @@ export class EmailService {
   }
 
   private createTransporter() {
+    if (this.configService.get<string>('EMAIL_TRANSPORT') === 'json') {
+      this.transporter = nodemailer.createTransport({ jsonTransport: true });
+      return;
+    }
+
     // this.transporter = nodemailer.createTransport({
     //   service: 'gmail',
     //   auth: {
@@ -38,11 +43,14 @@ export class EmailService {
     verificationToken: string,
   ): Promise<boolean> {
     try {
-      const appUrl = this.configService.get<string>(
-        'APP_URL',
-        'http://localhost:3000',
+      const frontendUrl = this.configService.get<string>(
+        'FRONTEND_URL',
+        'http://localhost:3001',
       );
-      const verificationUrl = `${appUrl}/auth/verify-email?token=${verificationToken}`;
+      const verificationUrl =
+        `${frontendUrl}/api/auth/verification-link` +
+        `?token=${encodeURIComponent(verificationToken)}` +
+        `&email=${encodeURIComponent(email)}`;
 
       const htmlContent = this.getVerificationEmailTemplate(
         userName,

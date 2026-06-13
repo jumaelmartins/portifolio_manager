@@ -8,6 +8,15 @@ import { EmailService } from '../../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, randomInt } from 'crypto';
 
+export type VerificationChallenge = {
+  token: string;
+  expiresInSeconds: number;
+};
+
+export type GeneratedVerificationChallenge = VerificationChallenge & {
+  code: string;
+};
+
 @Injectable()
 export class EmailVerificationService {
   constructor(
@@ -18,8 +27,7 @@ export class EmailVerificationService {
 
   async generateVerificationToken(
     user_id: number,
-  ): Promise<{ token: string; code: string }> {
-
+  ): Promise<GeneratedVerificationChallenge> {
     const token = randomBytes(32).toString('hex');
     const code = randomInt(100000, 999999).toString();
     const expirationMinutes = this.configService.get<number>(
@@ -46,10 +54,16 @@ export class EmailVerificationService {
       },
     });
 
-    return { token, code };
+    return {
+      token,
+      code,
+      expiresInSeconds: expirationMinutes * 60,
+    };
   }
 
-  async sendVerificationEmail(user_id: number): Promise<boolean> {
+  async sendVerificationEmail(
+    user_id: number,
+  ): Promise<VerificationChallenge> {
     const user = await this.prisma.f_user.findUnique({
       where: { id: user_id },
     });
@@ -61,7 +75,8 @@ export class EmailVerificationService {
       throw new BadRequestException('email already verified');
     }
 
-    const { token, code } = await this.generateVerificationToken(user_id);
+    const { token, code, expiresInSeconds } =
+      await this.generateVerificationToken(user_id);
 
     const userName = user.email.split('@')[0];
 
@@ -76,7 +91,7 @@ export class EmailVerificationService {
       throw new BadRequestException('error to send verification email');
     }
 
-    return true;
+    return { token, expiresInSeconds };
   }
 
   async verifyEmailWithCode(token: string, code: string): Promise<boolean> {
@@ -150,7 +165,9 @@ export class EmailVerificationService {
     return false;
   }
 
-  async resendVerificationEmail(email: string): Promise<boolean> {
+  async resendVerificationEmail(
+    email: string,
+  ): Promise<VerificationChallenge> {
     const user = await this.prisma.f_user.findUnique({
       where: { email },
     });
@@ -176,7 +193,7 @@ export class EmailVerificationService {
       );
     }
 
-    return await this.sendVerificationEmail(user.id);
+    return this.sendVerificationEmail(user.id);
   }
 
   async cleanupExpiredTokens(): Promise<number> {

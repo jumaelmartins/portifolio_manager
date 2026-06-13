@@ -7,12 +7,12 @@ import {
   Param,
   HttpStatus,
   InternalServerErrorException,
-  ConflictException,
   HttpCode,
   Put,
   UseGuards,
   Req,
   ForbiddenException,
+  HttpException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -49,11 +49,9 @@ export class UsersController {
           isEmailVerified: false,
           isActive: false,
         },
-        instructions: {
-          step1: 'Verifique sua caixa de email (incluindo spam)',
-          step2: 'Clique no link do email ou acesse /auth/verify-email',
-          step3: 'Digite o código de 6 dígitos enviado',
-          note: 'O código expira em 30 minutos',
+        verification: {
+          token: 'verification-token',
+          expiresInSeconds: 1800,
         },
       },
     },
@@ -72,7 +70,8 @@ export class UsersController {
   async create(@Body() createUserDto: CreateUserDto) {
     try {
       const user = await this.usersService.create(createUserDto);
-      await this.emailVerificationService.sendVerificationEmail(user.id);
+      const verification =
+        await this.emailVerificationService.sendVerificationEmail(user.id);
       return {
         message:
           'Usuário criado com sucesso! Verifique seu email para ativar a conta.',
@@ -82,17 +81,10 @@ export class UsersController {
           isEmailVerified: false,
           isActive: false,
         },
-        instructions: {
-          step1: 'Verifique sua caixa de email (incluindo spam)',
-          step2: 'Clique no link do email ou acesse /auth/verify-email',
-          step3: 'Digite o código de 6 dígitos enviado',
-          note: 'O código expira em 30 minutos',
-        },
+        verification,
       };
     } catch (e) {
-      if (e.name === 'ConflictException') {
-        throw new ConflictException(e.message);
-      }
+      if (e instanceof HttpException) throw e;
       throw new InternalServerErrorException();
     }
   }

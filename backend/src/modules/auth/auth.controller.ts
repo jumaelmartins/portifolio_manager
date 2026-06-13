@@ -21,7 +21,20 @@ import { UpdatePasswordDto } from '../users/dto/update-password-user.dto';
 import { EmailVerificationService } from './email_verification_token.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import { UserStatus } from 'src/utils/types';
+import { type AuthenticatedRequest, UserStatus } from 'src/utils/types';
+import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
+import { renderOauthHandoff } from './oauth-handoff';
+import { ActiveUserGuard } from './guards/active-user.guard';
+
+type GoogleOauthCallbackRequest = {
+  query?: { state?: unknown };
+  user: {
+    id: number;
+    role_id: number;
+    status_id: number;
+  };
+};
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +42,7 @@ export class AuthController {
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailVerificationService: EmailVerificationService,
+    private configService: ConfigService,
   ) {}
 
   @Post('login')
@@ -100,15 +114,21 @@ export class AuthController {
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   async resendVerification(@Body() resendDto: ResendVerificationDto) {
-    await this.emailVerificationService.resendVerificationEmail(
-      resendDto.email,
-    );
+    const verification =
+      await this.emailVerificationService.resendVerificationEmail(
+        resendDto.email,
+      );
 
     return {
       message: 'Email de verificação reenviado com sucesso!',
-      instructions: 'Verifique sua caixa de email (incluindo spam)',
-      expires_in: '30 minutos',
+      verification,
     };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  async me(@Request() req: AuthenticatedRequest) {
+    return this.usersService.findOne(Number(req.user.sub));
   }
 
   /**
@@ -149,13 +169,35 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleOauthGuard)
-  async googleAuthCallback(@Request() req, @Res() res: Response) {
+  googleAuthCallback(
+    @Request() req: GoogleOauthCallbackRequest,
+    @Res() res: Response,
+  ) {
+    const state = req.query?.state;
+    if (typeof state !== 'string') {
+      throw new BadRequestException('Missing OAuth state');
+    }
+
     const user = req.user;
     const payload = { sub: user.id, role: user.role_id, status: user.status_id };
     const token = this.jwtService.sign(payload);
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3001',
+    );
+    const nonce = randomBytes(16).toString('base64');
+    const html = renderOauthHandoff({
+      callbackUrl: `${frontendUrl}/api/auth/google/callback`,
+      token,
+      state,
+      nonce,
+    });
 
-    // Redireciona com o token na query string — frontend deve capturar e salvar
-    return res.redirect(`/auth/google/success?token=${token}`);
+    res.setHeader(
+      'Content-Security-Policy',
+      `default-src 'none'; script-src 'nonce-${nonce}'; form-action ${frontendUrl}; base-uri 'none'; frame-ancestors 'none'`,
+    );
+    return res.type('html').send(html);
   }
 
   @Get('google/success')
