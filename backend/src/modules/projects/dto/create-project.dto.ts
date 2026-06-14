@@ -3,10 +3,10 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsUrl,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProjectDto {
@@ -20,22 +20,22 @@ export class CreateProjectDto {
   @MaxLength(5000)
   description: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsUrl({ require_protocol: true })
   repo_url?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsUrl({ require_protocol: true })
   live_url?: string;
 
   @IsInt()
   d_categoryId: number;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsInt()
   f_imagesId?: number;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsArray()
   @ArrayUnique()
   @IsInt({ each: true })

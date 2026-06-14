@@ -15,16 +15,21 @@ export class ProjectRepository {
   constructor(private prismaService: PrismaService) {}
 
   async create(data: CreateProjectDto, userId: number) {
-    const { technologyIds, ...projectData } = data;
-
     return this.prismaService.f_projects.create({
       data: {
-        ...projectData,
+        title: data.title,
+        description: data.description,
+        ...(data.repo_url !== undefined ? { repo_url: data.repo_url } : {}),
+        ...(data.live_url !== undefined ? { live_url: data.live_url } : {}),
+        d_categoryId: data.d_categoryId,
+        ...(data.f_imagesId !== undefined
+          ? { f_imagesId: data.f_imagesId }
+          : {}),
         f_userId: userId,
-        ...(technologyIds !== undefined
+        ...(data.technologyIds !== undefined
           ? {
               technologies: {
-                connect: technologyIds.map((id) => ({ id })),
+                connect: data.technologyIds.map((id) => ({ id })),
               },
             }
           : {}),
@@ -55,16 +60,25 @@ export class ProjectRepository {
   }
 
   async update(id: number, userId: number, data: UpdateProjectDto) {
-    const { technologyIds, ...projectData } = data;
-
     return this.prismaService.f_projects.update({
       where: { id, f_userId: userId },
       data: {
-        ...projectData,
-        ...(technologyIds !== undefined
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.description !== undefined
+          ? { description: data.description }
+          : {}),
+        ...(data.repo_url !== undefined ? { repo_url: data.repo_url } : {}),
+        ...(data.live_url !== undefined ? { live_url: data.live_url } : {}),
+        ...(data.d_categoryId !== undefined
+          ? { d_categoryId: data.d_categoryId }
+          : {}),
+        ...(data.f_imagesId !== undefined
+          ? { f_imagesId: data.f_imagesId }
+          : {}),
+        ...(data.technologyIds !== undefined
           ? {
               technologies: {
-                set: technologyIds.map((technologyId) => ({
+                set: data.technologyIds.map((technologyId) => ({
                   id: technologyId,
                 })),
               },

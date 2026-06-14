@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectRepository } from './repository/projects.repository';
@@ -21,7 +23,10 @@ export class ProjectsService {
 
     await this.validateCoverOwnership(createProjectDto.f_imagesId, userId);
 
-    return this.projectRepository.create(createProjectDto, userId);
+    return this.executeProjectWrite(
+      () => this.projectRepository.create(createProjectDto, userId),
+      createProjectDto.technologyIds !== undefined,
+    );
   }
 
   async findAll(userId: number) {
@@ -55,7 +60,10 @@ export class ProjectsService {
 
     await this.validateCoverOwnership(updateProjectDto.f_imagesId, userId);
 
-    return this.projectRepository.update(id, userId, updateProjectDto);
+    return this.executeProjectWrite(
+      () => this.projectRepository.update(id, userId, updateProjectDto),
+      updateProjectDto.technologyIds !== undefined,
+    );
   }
 
   async delete(id: number, userId: number) {
@@ -78,6 +86,27 @@ export class ProjectsService {
     const image = await this.projectRepository.findImageById(imageId);
     if (!image || image.f_userId !== userId) {
       throw new ForbiddenException('Project cover is not owned by user');
+    }
+  }
+
+  private async executeProjectWrite<T>(
+    write: () => Promise<T>,
+    includesTechnologies: boolean,
+  ): Promise<T> {
+    try {
+      return await write();
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException('Project Already Exists');
+        }
+
+        if (error.code === 'P2025' && includesTechnologies) {
+          throw new BadRequestException('Invalid project relationship');
+        }
+      }
+
+      throw error;
     }
   }
 }

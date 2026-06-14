@@ -15,6 +15,9 @@ const validProject = {
 const validateDto = (data: Record<string, unknown>) =>
   validate(Object.assign(new CreateProjectDto(), data));
 
+const validateUpdateDto = (data: Record<string, unknown>) =>
+  validate(Object.assign(new UpdateProjectDto(), data));
+
 describe('CreateProjectDto', () => {
   it('accepts the complete valid payload without an owner field', async () => {
     await expect(validateDto(validProject)).resolves.toEqual([]);
@@ -47,10 +50,31 @@ describe('CreateProjectDto', () => {
       }),
     ).resolves.toEqual([]);
   });
+
+  it.each(['technologyIds', 'f_imagesId'])(
+    'rejects null for optional field %s',
+    async (property) => {
+      const errors = await validateDto({
+        ...validProject,
+        [property]: null,
+      });
+
+      expect(errors.map((error) => error.property)).toContain(property);
+    },
+  );
 });
 
 describe('UpdateProjectDto', () => {
   it('makes every create field optional', async () => {
     await expect(validate(new UpdateProjectDto())).resolves.toEqual([]);
   });
+
+  it.each(['technologyIds', 'f_imagesId'])(
+    'rejects null for optional field %s',
+    async (property) => {
+      const errors = await validateUpdateDto({ [property]: null });
+
+      expect(errors.map((error) => error.property)).toContain(property);
+    },
+  );
 });

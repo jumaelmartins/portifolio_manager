@@ -1,4 +1,5 @@
-import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { ParseIntPipe } from '@nestjs/common';
+import { GUARDS_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -64,9 +65,9 @@ describe('Controller ownership guards', () => {
 
     await controller.create(createDto, request);
     await controller.findAll(request);
-    await controller.findOne('7', request);
-    await controller.update('7', updateDto, request);
-    await controller.delete('7', request);
+    await controller.findOne(7, request);
+    await controller.update(7, updateDto, request);
+    await controller.delete(7, request);
 
     expect(projectService.create).toHaveBeenCalledWith(createDto, 42);
     expect(projectService.findAll).toHaveBeenCalledWith(42);
@@ -74,4 +75,20 @@ describe('Controller ownership guards', () => {
     expect(projectService.update).toHaveBeenCalledWith(7, updateDto, 42);
     expect(projectService.delete).toHaveBeenCalledWith(7, 42);
   });
+
+  it.each(['findOne', 'update', 'delete'] as const)(
+    'parses the project id for %s',
+    (methodName) => {
+      const routeArguments = Reflect.getMetadata(
+        ROUTE_ARGS_METADATA,
+        ProjectsController,
+        methodName,
+      ) as Record<string, { data?: string; pipes: unknown[] }>;
+      const idArgument = Object.values(routeArguments).find(
+        (argument) => argument.data === 'id',
+      );
+
+      expect(idArgument?.pipes).toEqual([ParseIntPipe]);
+    },
+  );
 });

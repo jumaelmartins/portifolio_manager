@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectsService } from './projects.service';
@@ -27,6 +29,12 @@ describe('ProjectsService', () => {
       d_categoryId: 1,
       ...overrides,
     }) as CreateProjectDto;
+
+  const prismaError = (code: string) =>
+    new Prisma.PrismaClientKnownRequestError('Prisma write failed', {
+      code,
+      clientVersion: 'test',
+    });
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -53,6 +61,26 @@ describe('ProjectsService', () => {
     await service.create(dto, 42);
 
     expect(repository.create).toHaveBeenCalledWith(dto, 42);
+  });
+
+  it('translates a create title race into ConflictException', async () => {
+    const dto = createDto();
+    repository.findByTitle.mockResolvedValue(null);
+    repository.create.mockRejectedValue(prismaError('P2002'));
+
+    await expect(service.create(dto, 42)).rejects.toEqual(
+      new ConflictException('Project Already Exists'),
+    );
+  });
+
+  it('translates an invalid technology during create into BadRequestException', async () => {
+    const dto = createDto({ technologyIds: [999] });
+    repository.findByTitle.mockResolvedValue(null);
+    repository.create.mockRejectedValue(prismaError('P2025'));
+
+    await expect(service.create(dto, 42)).rejects.toEqual(
+      new BadRequestException('Invalid project relationship'),
+    );
   });
 
   it('accepts a cover owned by the authenticated user', async () => {
@@ -120,6 +148,27 @@ describe('ProjectsService', () => {
     });
 
     expect(repository.update).toHaveBeenCalledWith(7, 42, dto);
+  });
+
+  it('translates an update title race into ConflictException', async () => {
+    const dto = { title: 'Available during pre-check' } as UpdateProjectDto;
+    repository.findById.mockResolvedValue({ id: 7, f_userId: 42 });
+    repository.findByTitle.mockResolvedValue(null);
+    repository.update.mockRejectedValue(prismaError('P2002'));
+
+    await expect(service.update(7, dto, 42)).rejects.toEqual(
+      new ConflictException('Project Already Exists'),
+    );
+  });
+
+  it('translates an invalid technology during update into BadRequestException', async () => {
+    const dto = { technologyIds: [999] } as UpdateProjectDto;
+    repository.findById.mockResolvedValue({ id: 7, f_userId: 42 });
+    repository.update.mockRejectedValue(prismaError('P2025'));
+
+    await expect(service.update(7, dto, 42)).rejects.toEqual(
+      new BadRequestException('Invalid project relationship'),
+    );
   });
 
   it('does not look up a title when an update leaves it unchanged', async () => {

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Req,
@@ -35,25 +36,31 @@ export class ProjectsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.projectsService.findOne(+id, Number(req.user.sub));
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findOne(id, Number(req.user.sub));
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateProjectDto: UpdateProjectDto,
     @Req() req: AuthenticatedRequest,
   ) {
     return this.projectsService.update(
-      +id,
+      id,
       updateProjectDto,
       Number(req.user.sub),
     );
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.projectsService.delete(+id, Number(req.user.sub));
+  delete(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.delete(id, Number(req.user.sub));
   }
 }

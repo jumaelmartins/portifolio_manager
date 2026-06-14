@@ -56,6 +56,28 @@ describe('ProjectRepository', () => {
     });
   });
 
+  it('allowlists create fields and always uses the authenticated user id', async () => {
+    const payload = {
+      title: 'Portfolio',
+      description: 'Description',
+      d_categoryId: 1,
+      f_userId: 99,
+      unexpected: 'must not reach Prisma',
+    } as unknown as CreateProjectDto;
+
+    await repository.create(payload, 42);
+
+    expect(projects.create).toHaveBeenCalledWith({
+      data: {
+        title: payload.title,
+        description: payload.description,
+        d_categoryId: payload.d_categoryId,
+        f_userId: 42,
+      },
+      include,
+    });
+  });
+
   it('scopes list and lookups to the authenticated user', async () => {
     await repository.findAll(42);
     await repository.findById(7, 42);
@@ -103,6 +125,40 @@ describe('ProjectRepository', () => {
     expect(projects.update).toHaveBeenCalledWith({
       where: { id: 7, f_userId: 42 },
       data: dto,
+      include,
+    });
+  });
+
+  it('disconnects all technologies when an empty list is provided', async () => {
+    const dto = { technologyIds: [] } as UpdateProjectDto;
+
+    await repository.update(7, 42, dto);
+
+    expect(projects.update).toHaveBeenCalledWith({
+      where: { id: 7, f_userId: 42 },
+      data: {
+        technologies: {
+          set: [],
+        },
+      },
+      include,
+    });
+  });
+
+  it('allowlists update fields and never forwards an ownership override', async () => {
+    const payload = {
+      description: 'Updated',
+      f_userId: 99,
+      unexpected: 'must not reach Prisma',
+    } as unknown as UpdateProjectDto;
+
+    await repository.update(7, 42, payload);
+
+    expect(projects.update).toHaveBeenCalledWith({
+      where: { id: 7, f_userId: 42 },
+      data: {
+        description: 'Updated',
+      },
       include,
     });
   });
