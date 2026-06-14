@@ -20,7 +20,7 @@ describe('EmailVerificationService transactions', () => {
 
   function createHarness() {
     const tx = {
-      $queryRaw: jest.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      $executeRaw: jest.fn().mockResolvedValue(1),
       f_user: {
         findUnique: jest.fn().mockResolvedValue(user),
         update: jest.fn().mockResolvedValue({}),
@@ -71,11 +71,11 @@ describe('EmailVerificationService transactions', () => {
           data: { is_used: boolean; used_at: Date };
         }
       | undefined;
-    tx.$queryRaw.mockImplementation(
+    tx.$executeRaw.mockImplementation(
       (strings: TemplateStringsArray, userId: number) => {
         advisorySql = strings;
         advisoryUserId = userId;
-        return Promise.resolve([{ pg_advisory_xact_lock: null }]);
+        return Promise.resolve(1);
       },
     );
     tx.f_email_verification_token.updateMany.mockImplementation(
@@ -88,7 +88,7 @@ describe('EmailVerificationService transactions', () => {
     await service.sendVerificationEmail(user.id);
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
     expect(advisorySql?.join('')).toContain('pg_advisory_xact_lock');
     expect(advisoryUserId).toBe(user.id);
     expect(tx.f_email_verification_token.count).not.toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe('EmailVerificationService transactions', () => {
     expect(tx.f_email_verification_token.create).toHaveBeenCalledTimes(1);
   });
 
-  it('serializes eight resends so no more than five pass the hourly limit', async () => {
+  it('serializes concurrent resends so only the first passes the cooldown', async () => {
     const { service, prisma, tx, emailService } = createHarness();
     let challengeCount = 0;
     let transactionQueue = Promise.resolve();
@@ -131,7 +131,9 @@ describe('EmailVerificationService transactions', () => {
             created_at: new Date(Date.now() - 30 * 60 * 1000),
           });
         }
-        return Promise.resolve(null);
+        return Promise.resolve(
+          challengeCount > 0 ? { created_at: new Date() } : null,
+        );
       },
     );
     tx.f_email_verification_token.create.mockImplementation(() => {
@@ -147,11 +149,11 @@ describe('EmailVerificationService transactions', () => {
 
     expect(
       results.filter((result) => result.status === 'fulfilled'),
-    ).toHaveLength(5);
+    ).toHaveLength(1);
     const rejected = results.filter(
       (result): result is PromiseRejectedResult => result.status === 'rejected',
     );
-    expect(rejected).toHaveLength(3);
+    expect(rejected).toHaveLength(7);
     for (const result of rejected) {
       expect(result.reason).toBeInstanceOf(HttpException);
       const exception = result.reason as HttpException;
@@ -160,11 +162,13 @@ describe('EmailVerificationService transactions', () => {
         message: string;
         retryAfterSeconds: number;
       };
-      expect(response.message).toBe('verification request limit exceeded');
+      expect(response.message).toBe(
+        'wait for 2 minutes before send new request email',
+      );
       expect(response.retryAfterSeconds).toBeGreaterThan(0);
     }
-    expect(tx.f_email_verification_token.create).toHaveBeenCalledTimes(5);
-    expect(emailService.sendVerificationEmail).toHaveBeenCalledTimes(5);
+    expect(tx.f_email_verification_token.create).toHaveBeenCalledTimes(1);
+    expect(emailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
   });
 
   it('returns HTTP 429 with retry timing during the resend cooldown', async () => {

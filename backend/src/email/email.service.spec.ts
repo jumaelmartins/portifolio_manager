@@ -80,7 +80,7 @@ describe('EmailService configuration', () => {
 
     expect(sentMailOptions).toBeDefined();
     expect(sentMailOptions!.html).toEqual(
-      expect.stringContaining('href="https://portfolio.example/auth/login"'),
+      expect.stringContaining('href="https://portfolio.example/login"'),
     );
     expect(sentMailOptions!.html).not.toEqual(
       expect.stringContaining('https://legacy.example'),

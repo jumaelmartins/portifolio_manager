@@ -373,7 +373,7 @@ export class EmailVerificationService {
     transaction: Prisma.TransactionClient,
     userId: number,
   ): Promise<void> {
-    await transaction.$queryRaw`
+    await transaction.$executeRaw`
       SELECT pg_advisory_xact_lock(CAST(${userId} AS bigint))
     `;
   }

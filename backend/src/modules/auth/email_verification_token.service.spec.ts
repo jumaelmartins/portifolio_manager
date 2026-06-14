@@ -15,7 +15,7 @@ describe('EmailVerificationService security limits', () => {
 
   let prisma: {
     $transaction: jest.Mock;
-    $queryRaw: jest.Mock;
+    $executeRaw: jest.Mock;
     f_email_verification_token: {
       findUnique: jest.Mock;
       updateMany: jest.Mock;
@@ -37,7 +37,7 @@ describe('EmailVerificationService security limits', () => {
   beforeEach(() => {
     prisma = {
       $transaction: jest.fn(),
-      $queryRaw: jest.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      $executeRaw: jest.fn().mockResolvedValue(1),
       f_email_verification_token: {
         findUnique: jest.fn(),
         updateMany: jest.fn(),

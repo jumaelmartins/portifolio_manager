@@ -178,7 +178,7 @@ export class EmailService {
           </div>
           <p>Sua conta foi verificada com sucesso! Agora você pode aproveitar todos os recursos da nossa plataforma.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${frontendUrl}/auth/login"
+            <a href="${frontendUrl}/login"
                style="background: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">
               🚀 Fazer Login
             </a>

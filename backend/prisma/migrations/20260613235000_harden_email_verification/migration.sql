@@ -1,3 +1,6 @@
+ALTER TABLE "email_verification_tokens"
+ADD COLUMN IF NOT EXISTS "failed_attempts" INTEGER NOT NULL DEFAULT 0;
+
 WITH ranked_unused_tokens AS (
   SELECT
     "id",
@@ -16,9 +19,10 @@ FROM ranked_unused_tokens
 WHERE tokens."id" = ranked_unused_tokens."id"
   AND ranked_unused_tokens.row_number > 1;
 
-CREATE UNIQUE INDEX "email_verification_tokens_one_unused_per_user_idx"
+CREATE UNIQUE INDEX IF NOT EXISTS
+"email_verification_tokens_one_unused_per_user_idx"
 ON "email_verification_tokens" ("user_id")
 WHERE "is_used" = false;
 
-CREATE INDEX "email_verification_tokens_user_id_created_at_idx"
+CREATE INDEX IF NOT EXISTS "email_verification_tokens_user_id_created_at_idx"
 ON "email_verification_tokens" ("user_id", "created_at");
