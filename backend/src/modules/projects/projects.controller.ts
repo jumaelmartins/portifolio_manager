@@ -1,43 +1,59 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ActiveUserGuard } from '../auth/guards/active-user.guard';
+import type { AuthenticatedRequest } from '../../utils/types';
 
+@UseGuards(JwtAuthGuard, ActiveUserGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createProjectDto: CreateProjectDto) {
-    return this.projectsService.create(createProjectDto);
+  create(
+    @Body() createProjectDto: CreateProjectDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.create(createProjectDto, Number(req.user.sub));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Req() request: Request) {
-
-    const user = request['user'];
-    console.log('Authenticated user:', user);
-    
-    return this.projectsService.findAll();
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.projectsService.findAll(Number(req.user.sub));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
+  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.projectsService.findOne(+id, Number(req.user.sub));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(+id, updateProjectDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.update(
+      +id,
+      updateProjectDto,
+      Number(req.user.sub),
+    );
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.projectsService.delete(+id);
+  delete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.projectsService.delete(+id, Number(req.user.sub));
   }
 }

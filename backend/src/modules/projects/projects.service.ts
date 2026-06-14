@@ -1,4 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectRepository } from './repository/projects.repository';
@@ -7,43 +12,72 @@ import { ProjectRepository } from './repository/projects.repository';
 export class ProjectsService {
   constructor(private projectRepository: ProjectRepository) {}
 
-  async create(createProjectDto: CreateProjectDto) {
+  async create(createProjectDto: CreateProjectDto, userId: number) {
     const { title } = createProjectDto;
-    const project = await this.projectRepository.findByTitle(title);
+    const project = await this.projectRepository.findByTitle(title, userId);
     if (project) {
       throw new ConflictException('Project Already Exists');
     }
-    return await this.projectRepository.create(createProjectDto);
+
+    await this.validateCoverOwnership(createProjectDto.f_imagesId, userId);
+
+    return this.projectRepository.create(createProjectDto, userId);
   }
 
-  async findAll() {
-    return await this.projectRepository.findAll();
+  async findAll(userId: number) {
+    return this.projectRepository.findAll(userId);
   }
 
-  async findOne(id: number) {
-    const project = await this.projectRepository.findById(id);
+  async findOne(id: number, userId: number) {
+    const project = await this.projectRepository.findById(id, userId);
     if (!project) {
-      throw new ConflictException('Project Not Found');
+      throw new NotFoundException('Project Not Found');
     }
 
     return project;
   }
 
-  async update(id: number, updateProjectDto: UpdateProjectDto) {
-    const project = await this.projectRepository.findById(id);
+  async update(id: number, updateProjectDto: UpdateProjectDto, userId: number) {
+    const project = await this.projectRepository.findById(id, userId);
     if (!project) {
-      throw new ConflictException('Project Not Found');
+      throw new NotFoundException('Project Not Found');
     }
 
-    return await this.projectRepository.update(id, updateProjectDto);
+    if (updateProjectDto.title) {
+      const projectWithTitle = await this.projectRepository.findByTitle(
+        updateProjectDto.title,
+        userId,
+      );
+      if (projectWithTitle && projectWithTitle.id !== id) {
+        throw new ConflictException('Project Already Exists');
+      }
+    }
+
+    await this.validateCoverOwnership(updateProjectDto.f_imagesId, userId);
+
+    return this.projectRepository.update(id, userId, updateProjectDto);
   }
 
-  async delete(id: number) {
-    const project = await this.projectRepository.findById(id);
+  async delete(id: number, userId: number) {
+    const project = await this.projectRepository.findById(id, userId);
     if (!project) {
-      throw new ConflictException('Project Not Found');
+      throw new NotFoundException('Project Not Found');
     }
-    
-    return await this.projectRepository.delete(id);
+
+    return this.projectRepository.delete(id, userId);
+  }
+
+  private async validateCoverOwnership(
+    imageId: number | undefined,
+    userId: number,
+  ) {
+    if (imageId === undefined) {
+      return;
+    }
+
+    const image = await this.projectRepository.findImageById(imageId);
+    if (!image || image.f_userId !== userId) {
+      throw new ForbiddenException('Project cover is not owned by user');
+    }
   }
 }

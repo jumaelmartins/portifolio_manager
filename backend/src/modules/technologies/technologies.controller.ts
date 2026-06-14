@@ -14,9 +14,8 @@ import { UpdateTechnologyDto } from './dto/update-technology.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
-import { UserOwnershipGuard } from '../auth/guards/user-ownership.guard';
 
-@UseGuards(JwtAuthGuard, ActiveUserGuard, UserOwnershipGuard)
+@UseGuards(JwtAuthGuard, ActiveUserGuard)
 @Controller('technologies')
 export class TechnologiesController {
   constructor(private readonly technologiesService: TechnologiesService) {}

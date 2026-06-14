@@ -164,7 +164,7 @@ model f_courses {
 
 model f_projects {
   id           Int              @id @default(autoincrement())
-  title        String           @unique
+  title        String
   description  String
   repo_url     String?
   live_url     String?
@@ -177,6 +177,8 @@ model f_projects {
   technologies d_technologies[]
   created_at   DateTime         @default(now())
   updated_at   DateTime         @updatedAt
+
+  @@unique([f_userId, title])
 }
 
 // =====================
