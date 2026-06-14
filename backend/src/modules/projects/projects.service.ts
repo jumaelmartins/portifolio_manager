@@ -5,14 +5,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { Prisma, type f_images } from '@prisma/client';
+import { presentImage } from '../../common/presenters/image.presenter';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectRepository } from './repository/projects.repository';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private projectRepository: ProjectRepository) {}
+  constructor(
+    private projectRepository: ProjectRepository,
+    private configService: ConfigService,
+  ) {}
 
   async create(createProjectDto: CreateProjectDto, userId: number) {
     const { title } = createProjectDto;
@@ -23,14 +28,16 @@ export class ProjectsService {
 
     await this.validateCoverOwnership(createProjectDto.f_imagesId, userId);
 
-    return this.executeProjectWrite(
+    const created = await this.executeProjectWrite(
       () => this.projectRepository.create(createProjectDto, userId),
       createProjectDto.technologyIds !== undefined,
     );
+    return this.presentProject(created);
   }
 
   async findAll(userId: number) {
-    return this.projectRepository.findAll(userId);
+    const projects = await this.projectRepository.findAll(userId);
+    return projects.map((project) => this.presentProject(project));
   }
 
   async findOne(id: number, userId: number) {
@@ -39,7 +46,7 @@ export class ProjectsService {
       throw new NotFoundException('Project Not Found');
     }
 
-    return project;
+    return this.presentProject(project);
   }
 
   async update(id: number, updateProjectDto: UpdateProjectDto, userId: number) {
@@ -60,10 +67,11 @@ export class ProjectsService {
 
     await this.validateCoverOwnership(updateProjectDto.f_imagesId, userId);
 
-    return this.executeProjectWrite(
+    const updated = await this.executeProjectWrite(
       () => this.projectRepository.update(id, userId, updateProjectDto),
       updateProjectDto.technologyIds !== undefined,
     );
+    return this.presentProject(updated);
   }
 
   async delete(id: number, userId: number) {
@@ -108,5 +116,24 @@ export class ProjectsService {
 
       throw error;
     }
+  }
+
+  private presentProject<T extends { f_images?: f_images | null }>(project: T) {
+    if (!Object.prototype.hasOwnProperty.call(project, 'f_images')) {
+      return project;
+    }
+
+    return {
+      ...project,
+      f_images: project.f_images
+        ? presentImage(
+            project.f_images,
+            this.configService.get<string>(
+              'BACKEND_PUBLIC_URL',
+              'http://localhost:3000',
+            ),
+          )
+        : null,
+    };
   }
 }

@@ -19,6 +19,9 @@ describe('ProjectsService', () => {
     delete: jest.fn(),
     findImageById: jest.fn(),
   };
+  const config = {
+    get: jest.fn().mockReturnValue('http://localhost:3000'),
+  };
 
   let service: ProjectsService;
 
@@ -38,7 +41,33 @@ describe('ProjectsService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    service = new ProjectsService(repository as never);
+    config.get.mockReturnValue('http://localhost:3000');
+    service = new ProjectsService(repository as never, config as never);
+  });
+
+  it('presents a project cover without exposing its filesystem path', async () => {
+    repository.findById.mockResolvedValue({
+      id: 7,
+      f_userId: 42,
+      f_images: {
+        id: 9,
+        description: null,
+        src_path: 'uploads/42/cover.png',
+        f_userId: 42,
+        created_at: new Date('2026-01-01T00:00:00Z'),
+        updated_at: new Date('2026-01-01T00:00:00Z'),
+      },
+    });
+
+    const result = await service.findOne(7, 42);
+
+    expect(result.f_images).toEqual(
+      expect.objectContaining({
+        id: 9,
+        url: 'http://localhost:3000/uploads/42/cover.png',
+      }),
+    );
+    expect(result.f_images).not.toHaveProperty('src_path');
   });
 
   it('scopes title lookup and creation to the authenticated user', async () => {
