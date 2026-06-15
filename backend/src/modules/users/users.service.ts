@@ -85,8 +85,8 @@ export class UsersService {
     password: string,
   ): Promise<Omit<f_user, 'password_hash'> | null> {
     const user = await this.userRepository.findByEmailWithPassword(email);
-    if (!user || user.status_id !== UserStatus.ACTIVE) {
-      throw new UnauthorizedException('user not exist or inactive');
+    if (!user) {
+      throw new UnauthorizedException('user not exist');
     }
     const isPasswordValid = await this.hashService.comparePassword(
       password,
@@ -97,9 +97,13 @@ export class UsersService {
       throw new ForbiddenException('invalid password');
     }
 
-    await this.userRepository.update(user.id, { last_login: new Date() });
-    const { password_hash: _, ...userWithoutSensitiveData } = user;
-    return userWithoutSensitiveData;
+    const activeStatusId: number = UserStatus.ACTIVE;
+    if (user.verified_email && user.status_id === activeStatusId) {
+      await this.userRepository.update(user.id, { last_login: new Date() });
+    }
+    const userWithoutSensitiveData: Partial<f_user> = { ...user };
+    delete userWithoutSensitiveData.password_hash;
+    return userWithoutSensitiveData as Omit<f_user, 'password_hash'>;
   }
 
   async updatePassword(
