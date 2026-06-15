@@ -73,7 +73,7 @@ Criar uma plataforma para gerenciar conteúdo profissional de forma centralizada
 
 ## Principais recursos
 
-### Recursos já implementados no backend
+### Recursos já implementados
 
 - [x] Autenticação local com registro e login;
 - [x] Criptografia de senhas com bcrypt;
@@ -94,12 +94,19 @@ Criar uma plataforma para gerenciar conteúdo profissional de forma centralizada
 - [x] API pública de leitura;
 - [x] Dockerfile e Docker Compose;
 - [x] Swagger/OpenAPI;
-- [x] Documentação técnica complementar.
+- [x] Documentação técnica complementar;
+- [x] Frontend administrativo responsivo em Next.js;
+- [x] Design system e identidade visual próprios;
+- [x] Login, cadastro, verificação de e-mail e Google OAuth2;
+- [x] Sessão protegida em cookie HttpOnly por meio de BFF;
+- [x] Dashboard com indicadores reais do portfólio;
+- [x] Listagem, filtros, criação, edição e exclusão de projetos;
+- [x] Upload e seleção de capa para projetos;
+- [x] Testes unitários, de integração e E2E em desktop e mobile;
+- [x] Imagens Docker para backend e frontend.
 
 ### Recursos planejados
 
-- [ ] Frontend administrativo em Next.js;
-- [ ] Dashboard do CMS;
 - [ ] Perfil público gerenciável;
 - [ ] Preview público do portfólio;
 - [ ] Status de publicação para projetos;
@@ -117,15 +124,15 @@ Criar uma plataforma para gerenciar conteúdo profissional de forma centralizada
 - [ ] Versão demo pública;
 - [ ] Seeds para ambiente de demonstração;
 - [ ] CI/CD;
-- [ ] Testes E2E corrigidos e ampliados.
+- [ ] Telas administrativas para experiências, formações e cursos.
 
 ---
 
 ## Status atual
 
-O backend está em estágio avançado, com os principais módulos de autenticação, gerenciamento de conteúdo, upload, auditoria e API pública já implementados.
+O backend e a fundação do frontend administrativo estão implementados. O sistema já oferece autenticação completa, dashboard, gerenciamento visual de projetos, upload de capas, API pública, auditoria e execução containerizada.
 
-O próximo grande passo do projeto é a criação do **frontend administrativo em Next.js**, que permitirá gerenciar os dados de forma visual.
+As próximas etapas do frontend são os módulos administrativos de experiências, formações, cursos, perfil público e preview do portfólio.
 
 ---
 
@@ -144,14 +151,16 @@ O próximo grande passo do projeto é a criação do **frontend administrativo e
 - Nodemailer
 - Swagger/OpenAPI
 
-### Frontend planejado
+### Frontend
 
-- [Next.js](https://nextjs.org/)
-- React
+- [Next.js](https://nextjs.org/) v16
+- React 19
 - TypeScript
-- Tailwind CSS ou outra estratégia de estilização a definir
-- TanStack Query ou equivalente para consumo da API
-- React Hook Form ou equivalente para formulários
+- Tailwind CSS v4
+- TanStack Query
+- React Hook Form e Zod
+- Base UI
+- Vitest, Testing Library e Playwright
 
 ### Infraestrutura
 
@@ -225,7 +234,7 @@ portfolio-manager/
 │   │   ├── modules/          # Módulos de negócio da aplicação
 │   │   └── utils/            # Tipos e utilitários globais
 │   └── test/                 # Testes E2E
-├── frontend/                 # Frontend em Next.js, planejado
+├── frontend/                 # Frontend administrativo em Next.js
 ├── docker-compose.yml        # Orquestração dos serviços
 ├── README.md                 # Visão geral do projeto
 ├── DOCUMENTATION.md          # Documentação técnica da arquitetura e APIs
@@ -256,6 +265,12 @@ A API estará disponível em:
 http://localhost:3000
 ```
 
+A interface administrativa estará disponível em:
+
+```bash
+http://localhost:3001
+```
+
 A documentação Swagger estará disponível em:
 
 ```bash
@@ -264,29 +279,48 @@ http://localhost:3000/api-docs
 
 ### Desenvolvimento local
 
-Instale as dependências:
+Suba o PostgreSQL:
+
+```bash
+docker compose up -d db
+```
+
+Instale as dependências do backend, configure o ambiente e execute as migrations:
 
 ```bash
 cd backend
-npm install
-```
-
-Configure as variáveis de ambiente:
-
-```bash
+npm ci
 cp .env.example .env.development
-```
-
-Execute as migrations:
-
-```bash
 npm run prisma:dev:migrate
+npm run start:dev
 ```
 
-Inicie o servidor em modo desenvolvimento:
+Em outro terminal, instale e inicie o frontend:
 
 ```bash
-npm run start:dev
+cd frontend
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+### Testes
+
+Backend:
+
+```bash
+cd backend
+npm test
+npm run test:e2e
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run lint
+npm run test:run
+npm run test:e2e
 ```
 
 ---
@@ -296,23 +330,23 @@ npm run start:dev
 Exemplo de variáveis esperadas:
 
 ```env
-NODE_ENV=development
 PORT=3000
-DATABASE_URL="postgresql://user:password@localhost:5432/portfolio_manager"
-JWT_SECRET="your-jwt-secret"
-JWT_EXPIRES_IN="1d"
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-GOOGLE_CALLBACK_URL="http://localhost:3000/auth/google/callback"
-SMTP_HOST="smtp.example.com"
-SMTP_PORT=587
-SMTP_USER="your-smtp-user"
-SMTP_PASS="your-smtp-password"
-EMAIL_FROM="Portfolio Manager <noreply@example.com>"
-UPLOAD_DIR="uploads"
+DATABASE_URL=postgresql://portfolio:portfolio_pass@localhost:5432/portfolio_db
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRATION=24h
+FRONTEND_URL=http://localhost:3001
+CORS_ORIGINS=http://localhost:3001
+BACKEND_PUBLIC_URL=http://localhost:3000
+EMAIL_TRANSPORT=json
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+BACKEND_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+SESSION_COOKIE_NAME=pm_session
 ```
 
-> Ajuste os nomes conforme o arquivo `.env.example` real do projeto.
+Os valores de Google OAuth são opcionais no desenvolvimento. No Docker Compose eles usam placeholders locais, portanto o botão do Google só deve ser usado após configurar credenciais válidas.
 
 ---
 
@@ -655,19 +689,19 @@ Possibilidades futuras:
 
 ### Fase 2 — Frontend administrativo
 
-- [ ] Criar estrutura Next.js;
-- [ ] Criar layout autenticado;
-- [ ] Criar tela de login;
-- [ ] Criar tela de cadastro;
-- [ ] Criar tela de verificação de e-mail;
-- [ ] Criar dashboard;
-- [ ] Criar CRUD visual de projetos;
+- [x] Criar estrutura Next.js;
+- [x] Criar layout autenticado;
+- [x] Criar tela de login;
+- [x] Criar tela de cadastro;
+- [x] Criar tela de verificação de e-mail;
+- [x] Criar dashboard;
+- [x] Criar CRUD visual de projetos;
 - [ ] Criar CRUD visual de categorias;
 - [ ] Criar CRUD visual de tecnologias;
 - [ ] Criar CRUD visual de experiências;
 - [ ] Criar CRUD visual de formações;
 - [ ] Criar CRUD visual de cursos;
-- [ ] Criar módulo de mídia/imagens;
+- [x] Integrar upload e seleção de capa em projetos;
 - [ ] Criar módulo de perfil público;
 - [ ] Criar preview público.
 
@@ -695,7 +729,7 @@ Possibilidades futuras:
 - [ ] Storage flexível: local, S3, R2 ou MinIO;
 - [ ] CI/CD;
 - [ ] Deploy de demo pública;
-- [ ] Testes E2E completos;
+- [x] Testes E2E de autenticação e projetos;
 - [ ] Guia de deploy em produção.
 
 ---

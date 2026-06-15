@@ -9,17 +9,64 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio -d portfolio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    env_file:
-      - ./backend/.env.production
+    volumes:
+      - uploads:/app/uploads
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://portfolio:portfolio_pass@db:5432/portfolio_db
+      JWT_SECRET: ${JWT_SECRET:-change-this-local-compose-secret}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      FRONTEND_URL: http://localhost:3001
+      CORS_ORIGINS: http://localhost:3001
+      BACKEND_PUBLIC_URL: http://localhost:3000
+      EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:-json}
+      EMAIL_FROM: ${EMAIL_FROM:-Portfolio Manager <noreply@portfolio.local>}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+      GOOGLE_CALLBACK_URL: http://localhost:3000/auth/google/callback
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --quiet --output-document=- http://localhost:3000 >/dev/null 2>&1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      BACKEND_URL: http://backend:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+      SESSION_COOKIE_NAME: pm_session
+      VERIFICATION_COOKIE_NAME: pm_verification
+      OAUTH_STATE_COOKIE_NAME: pm_oauth_state
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:
+  uploads:

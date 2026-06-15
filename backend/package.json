@@ -18,7 +18,7 @@
     "test:watch": "dotenv -e .env.development jest --watch",
     "test:cov": "dotenv -e .env.development jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "cross-env NODE_ENV=test DATABASE_URL=postgresql://portfolio:portfolio_pass@localhost:55432/portfolio_e2e JWT_SECRET=portfolio-manager-e2e-secret FRONTEND_URL=http://localhost:3001 CORS_ORIGINS=http://localhost:3001 BACKEND_PUBLIC_URL=http://localhost:3000 EMAIL_TRANSPORT=json \"EMAIL_FROM=Portfolio Manager <noreply@portfolio.test>\" GOOGLE_CLIENT_ID=e2e GOOGLE_CLIENT_SECRET=e2e GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback jest --config ./test/jest-e2e.json --runInBand",
     "prisma:dev:generate": "dotenv -e .env.development -- prisma generate",
     "prisma:dev:migrate": "dotenv -e .env.development -- prisma migrate dev",
     "prisma:dev:studio": "dotenv -e .env.development -- prisma studio",
