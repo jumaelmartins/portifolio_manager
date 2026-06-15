@@ -158,6 +158,29 @@ describe("ProjectsView", () => {
     ).toHaveAttribute("href", "/projects/new");
   });
 
+  it("shows one-time create feedback and cleans the URL", async () => {
+    useSearchParams.mockReturnValue(new URLSearchParams("created=1"));
+
+    render(
+      <ProjectsView
+        projects={[]}
+        categories={[]}
+        technologies={[]}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        "Project created successfully",
+      ),
+    );
+    expect(replace).toHaveBeenCalledWith("/projects", { scroll: false });
+  });
+
   it("confirms deletion and closes the dialog on success", async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn().mockResolvedValue(undefined);

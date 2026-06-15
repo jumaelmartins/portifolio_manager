@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FolderPlus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
@@ -81,6 +82,25 @@ export function ProjectsView({
     ),
   }));
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
+  useEffect(() => {
+    const created = searchParams.get("created") === "1";
+    const updated = searchParams.get("updated") === "1";
+    if (!created && !updated) {
+      return;
+    }
+
+    toast.success(
+      created ? "Project created successfully" : "Project updated successfully",
+    );
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("created");
+    nextParams.delete("updated");
+    const queryString = nextParams.toString();
+    router.replace(queryString ? `/projects?${queryString}` : "/projects", {
+      scroll: false,
+    });
+  }, [router, searchParams]);
 
   const filteredProjects = useMemo(() => {
     const query = filters.query.trim().toLocaleLowerCase();
