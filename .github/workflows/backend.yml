@@ -60,7 +60,8 @@ jobs:
     needs: docker
     runs-on: ubuntu-latest
     steps:
-      - uses: appleboy/ssh-action@v1
+      # CR_PAT must be a classic PAT with scope: read:packages
+      - uses: appleboy/ssh-action@v1.0.3
         env:
           CR_PAT: ${{ secrets.CR_PAT }}
         with:
@@ -72,4 +73,4 @@ jobs:
             echo "$CR_PAT" | docker login ghcr.io -u jumaelmartins --password-stdin
             cd /opt/portfolio-manager
             docker compose -f docker-compose.prod.yml pull backend
-            docker compose -f docker-compose.prod.yml up -d backend
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans backend
