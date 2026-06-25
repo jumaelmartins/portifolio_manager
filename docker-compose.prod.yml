@@ -1,0 +1,70 @@
+name: portfolio-manager
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: portfolio_pass
+      POSTGRES_DB: portfolio_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio -d portfolio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/jumaelmartins/portfolio-manager-backend:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/uploads
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://portfolio:portfolio_pass@db:5432/portfolio_db
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL}
+      EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:-smtp}
+      EMAIL_FROM: ${EMAIL_FROM}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget --quiet --output-document=- http://localhost:3000 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/jumaelmartins/portfolio-manager-frontend:latest
+    ports:
+      - "3001:3001"
+    environment:
+      BACKEND_URL: http://backend:3000
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      SESSION_COOKIE_NAME: pm_session
+      VERIFICATION_COOKIE_NAME: pm_verification
+      OAUTH_STATE_COOKIE_NAME: pm_oauth_state
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:
