@@ -74,4 +74,4 @@ jobs:
             cd /opt/portfolio-manager
             docker compose -f docker-compose.prod.yml pull frontend
             docker compose -f docker-compose.prod.yml stop frontend
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps frontend
