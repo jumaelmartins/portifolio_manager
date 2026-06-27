@@ -17,6 +17,10 @@ describe('AuthController security contracts', () => {
   const configService = {
     get: jest.fn(),
   };
+  const passwordResetService = {
+    requestPasswordReset: jest.fn(),
+    resetPassword: jest.fn(),
+  };
   let controller: AuthController;
 
   beforeEach(() => {
@@ -26,6 +30,7 @@ describe('AuthController security contracts', () => {
       jwtService as never,
       emailVerificationService as never,
       configService as never,
+      passwordResetService as never,
     );
   });
 
@@ -100,5 +105,36 @@ describe('AuthController security contracts', () => {
       AuthController.prototype.me,
     ) as unknown[];
     expect(guards).toEqual([JwtAuthGuard, ActiveUserGuard]);
+  });
+
+  it('forgotPassword always returns a generic 200 message', async () => {
+    passwordResetService.requestPasswordReset.mockResolvedValue(undefined);
+
+    const response = await controller.forgotPassword({
+      email: 'owner@example.com',
+    });
+
+    expect(response).toEqual({
+      message:
+        'Se o email estiver cadastrado, você receberá um link para redefinir sua senha.',
+    });
+    expect(passwordResetService.requestPasswordReset).toHaveBeenCalledWith(
+      'owner@example.com',
+    );
+  });
+
+  it('resetPassword returns a success message', async () => {
+    passwordResetService.resetPassword.mockResolvedValue(undefined);
+
+    const response = await controller.resetPassword({
+      token: 'abc123',
+      password: 'NewP@ss1',
+    });
+
+    expect(response).toEqual({ message: 'Senha redefinida com sucesso!' });
+    expect(passwordResetService.resetPassword).toHaveBeenCalledWith(
+      'abc123',
+      'NewP@ss1',
+    );
   });
 });

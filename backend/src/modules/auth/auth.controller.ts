@@ -26,6 +26,9 @@ import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { isValidOauthState, renderOauthHandoff } from './oauth-handoff';
 import { ActiveUserGuard } from './guards/active-user.guard';
+import { PasswordResetService } from './password_reset.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 type GoogleOauthCallbackRequest = {
   query?: { state?: unknown };
@@ -43,6 +46,7 @@ export class AuthController {
     private jwtService: JwtService,
     private emailVerificationService: EmailVerificationService,
     private configService: ConfigService,
+    private passwordResetService: PasswordResetService,
   ) {}
 
   @Post('login')
@@ -214,5 +218,22 @@ export class AuthController {
       message: 'Google OAuth2 login successful',
       user: req.user,
     };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.passwordResetService.requestPasswordReset(dto.email);
+    return {
+      message:
+        'Se o email estiver cadastrado, você receberá um link para redefinir sua senha.',
+    };
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.passwordResetService.resetPassword(dto.token, dto.password);
+    return { message: 'Senha redefinida com sucesso!' };
   }
 }
