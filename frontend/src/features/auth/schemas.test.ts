@@ -34,6 +34,14 @@ describe("authentication schemas", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts matching valid passwords", () => {
+    const result = resetPasswordSchema.safeParse({
+      password: "StrongP@ss1",
+      confirmPassword: "StrongP@ss1",
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects a password without uppercase, number, and special character", () => {
     const result = registrationSchema.safeParse({
       username: "jumael",
