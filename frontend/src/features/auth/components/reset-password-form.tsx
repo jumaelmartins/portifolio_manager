@@ -46,25 +46,29 @@ export function ResetPasswordForm() {
   }
 
   async function submit(values: ResetPasswordValues) {
-    const response = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token, password: values.password }),
-    });
-    const payload = await response.json();
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, password: values.password }),
+      });
+      const payload = await response.json();
 
-    if (!response.ok) {
-      if (response.status === 400) {
-        setInvalidToken(true);
-      } else {
-        form.setError("root", {
-          message: "Ocorreu um erro. Tente novamente.",
-        });
+      if (!response.ok) {
+        if (response.status === 400) {
+          setInvalidToken(true);
+        } else {
+          form.setError("root", {
+            message: "Ocorreu um erro. Tente novamente.",
+          });
+        }
+        return;
       }
-      return;
-    }
 
-    router.replace("/login?reset=success");
+      router.replace("/login?reset=success");
+    } catch {
+      form.setError("root", { message: "Ocorreu um erro. Tente novamente." });
+    }
   }
 
   const passwordError = form.formState.errors.password;

@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
@@ -57,7 +58,7 @@ export class PasswordResetService {
     if (!sent) {
       // Remove the orphaned token so the user can retry without hitting the cooldown
       await this.prisma.f_password_reset_token.delete({ where: { token } }).catch(() => null);
-      throw new BadRequestException('error sending password reset email');
+      throw new InternalServerErrorException('error sending password reset email');
     }
   }
 
@@ -76,13 +77,19 @@ export class PasswordResetService {
       throw new BadRequestException('Link expirado. Solicite um novo.');
     }
 
+    // Hash outside transaction — bcrypt is slow; holding a DB connection open for it wastes resources
     const passwordHash = await this.hashService.hashPassword(password);
 
+    // Atomic swap: updateMany with is_used: false guard is the concurrency lock.
+    // If two callers race, only one updateMany returns count:1; the other gets count:0 and throws.
     await this.prisma.$transaction(async (tx) => {
-      await tx.f_password_reset_token.update({
-        where: { token },
+      const consumed = await tx.f_password_reset_token.updateMany({
+        where: { token, is_used: false, expires_at: { gt: new Date() } },
         data: { is_used: true, used_at: new Date() },
       });
+      if (consumed.count !== 1) {
+        throw new BadRequestException('Link inválido ou expirado.');
+      }
       await tx.f_user.update({
         where: { id: record.user_id },
         data: { password_hash: passwordHash },

@@ -242,12 +242,14 @@ describe('PasswordResetService', () => {
         is_used: false,
         expires_at: new Date(Date.now() + 60_000),
       });
+      // Simulate the atomic consume succeeding (count:1 means exactly one row was updated)
+      prisma.f_password_reset_token.updateMany.mockResolvedValue({ count: 1 });
 
       await service.resetPassword('tok', 'NewP@ss1');
 
       expect(hashService.hashPassword).toHaveBeenCalledWith('NewP@ss1');
-      expect(prisma.f_password_reset_token.update).toHaveBeenCalledWith({
-        where: { token: 'tok' },
+      expect(prisma.f_password_reset_token.updateMany).toHaveBeenCalledWith({
+        where: { token: 'tok', is_used: false, expires_at: { gt: expect.any(Date) } },
         data: { is_used: true, used_at: expect.any(Date) },
       });
       expect(prisma.f_user.update).toHaveBeenCalledWith({
