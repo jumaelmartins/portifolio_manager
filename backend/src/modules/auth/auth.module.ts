@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { HashService } from '../../common/services/hash.service';
 import { EmailVerificationService } from './email_verification_token.service';
+import { PasswordResetService } from './password_reset.service';
 import { EmailService } from 'src/email/email.service';
 import { AuthController } from './auth.controller';
 import { UsersService } from '../users/users.service';
@@ -36,6 +37,7 @@ import { UserRepository } from '../users/repository/users.repository';
     GoogleStrategy,
     HashService,
     EmailVerificationService,
+    PasswordResetService,
     EmailService,
     ConfigService,
     UsersService,
