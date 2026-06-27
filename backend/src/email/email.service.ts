@@ -23,12 +23,12 @@ export class EmailService {
     );
 
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('EMAIL_HOST_DEV'),
-      port: Number(this.configService.get('EMAIL_PORT_DEV', 2525)),
+      host: this.configService.get<string>('EMAIL_HOST'),
+      port: Number(this.configService.get('EMAIL_PORT', 587)),
       secure: secureConfig === true || secureConfig === 'true',
       auth: {
-        user: this.configService.get<string>('EMAIL_USERNAME_DEV'),
-        pass: this.configService.get<string>('EMAIL_PASSWORD_DEV'),
+        user: this.configService.get<string>('EMAIL_USERNAME'),
+        pass: this.configService.get<string>('EMAIL_PASSWORD'),
       },
     });
   }
