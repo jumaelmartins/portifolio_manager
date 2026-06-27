@@ -29,9 +29,11 @@ function safeNextPath(nextPath?: string) {
 export function LoginForm({
   nextPath,
   verified = false,
+  resetSuccess = false,
 }: {
   nextPath?: string;
   verified?: boolean;
+  resetSuccess?: boolean;
 }) {
   const router = useRouter();
   const form = useForm<LoginValues>({
@@ -93,6 +95,15 @@ export function LoginForm({
         </div>
       ) : null}
 
+      {resetSuccess ? (
+        <div
+          className="mt-6 rounded-xl border border-primary/25 bg-primary/8 px-4 py-3 text-sm text-green-300"
+          role="status"
+        >
+          Senha redefinida com sucesso! Faça login com sua nova senha.
+        </div>
+      ) : null}
+
       <form
         className="mt-8 space-y-5"
         onSubmit={form.handleSubmit(submit)}
@@ -121,9 +132,12 @@ export function LoginForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-4">
             <Label htmlFor="login-password">Password</Label>
-            <span className="text-xs text-muted-foreground">
-              Minimum 8 characters
-            </span>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-primary underline-offset-4 hover:underline"
+            >
+              Forgot password?
+            </Link>
           </div>
           <PasswordField
             id="login-password"

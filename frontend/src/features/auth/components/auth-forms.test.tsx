@@ -271,4 +271,38 @@ describe("authentication forms", () => {
       ).toBeVisible();
     });
   });
+
+  describe("LoginForm (forgot-password link and reset-success banner)", () => {
+    it("renders the forgot-password link pointing to /forgot-password", () => {
+      renderWithProviders(<LoginForm />);
+
+      expect(
+        screen.getByRole("link", { name: "Forgot password?" }),
+      ).toHaveAttribute("href", "/forgot-password");
+    });
+
+    it("shows the reset-success banner when resetSuccess prop is true", () => {
+      renderWithProviders(<LoginForm resetSuccess={true} />);
+
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /Senha redefinida com sucesso/,
+      );
+    });
+
+    it("does not show the reset-success banner by default", () => {
+      renderWithProviders(<LoginForm />);
+
+      expect(
+        screen.queryByText(/Senha redefinida com sucesso/),
+      ).not.toBeInTheDocument();
+    });
+
+    it("does not show the reset-success banner when resetSuccess is false", () => {
+      renderWithProviders(<LoginForm resetSuccess={false} />);
+
+      expect(
+        screen.queryByText(/Senha redefinida com sucesso/),
+      ).not.toBeInTheDocument();
+    });
+  });
 });
