@@ -196,4 +196,82 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    userName: string,
+    resetUrl: string,
+    expiresInSeconds: number,
+  ): Promise<boolean> {
+    try {
+      const expirationMinutes = Math.ceil(expiresInSeconds / 60);
+      const mailOptions = {
+        from: this.configService.get<string>(
+          'EMAIL_FROM',
+          'Portfolio Manager <noreply@example.com>',
+        ),
+        to: email,
+        subject: '🔑 Redefinição de senha - Portfolio Manager',
+        html: this.getPasswordResetEmailTemplate(userName, resetUrl, expirationMinutes),
+      };
+      const result = (await this.transporter.sendMail(mailOptions)) as {
+        messageId?: string;
+      };
+      this.logger.log(`Email de redefinição de senha enviado para: ${email}`);
+      this.logger.debug(`Message ID: ${result.messageId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Erro ao enviar email de redefinição para ${email}:`, error);
+      return false;
+    }
+  }
+
+  private getPasswordResetEmailTemplate(
+    userName: string,
+    resetUrl: string,
+    expirationMinutes: number,
+  ): string {
+    return `
+  <!DOCTYPE html>
+  <html lang="pt-BR">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Redefinição de Senha</title>
+      <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .header { text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 20px; margin-bottom: 30px; }
+          .button { display: inline-block; background: #007bff; color: white; padding: 14px 36px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; font-weight: bold; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; text-align: center; }
+          .warning { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0; color: #856404; }
+      </style>
+  </head>
+  <body>
+      <div class="container">
+          <div class="header">
+              <h1>🔑 Redefinição de Senha</h1>
+              <p>Olá, ${userName}!</p>
+          </div>
+          <p>Recebemos uma solicitação para redefinir a senha da sua conta.</p>
+          <div style="text-align: center;">
+              <a href="${resetUrl}" class="button">Redefinir minha senha</a>
+          </div>
+          <p>Ou acesse diretamente: <br><code>${resetUrl}</code></p>
+          <div class="warning">
+              <strong>⚠️ Importante:</strong>
+              <ul>
+                  <li>Este link expira em <strong>${expirationMinutes} minutos</strong></li>
+                  <li>O link pode ser usado apenas uma vez</li>
+                  <li>Se você não solicitou esta redefinição, ignore este email</li>
+              </ul>
+          </div>
+          <div class="footer">
+              <p>Este é um email automático, não responda a esta mensagem.</p>
+          </div>
+      </div>
+  </body>
+  </html>
+  `;
+  }
 }

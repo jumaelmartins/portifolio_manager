@@ -86,4 +86,31 @@ describe('EmailService configuration', () => {
       expect.stringContaining('https://legacy.example'),
     );
   });
+
+  it('sends a password reset email containing the reset URL', async () => {
+    const values: Record<string, unknown> = {
+      EMAIL_TRANSPORT: 'json',
+      EMAIL_FROM: 'Portfolio Manager <noreply@example.com>',
+      FRONTEND_URL: 'http://localhost:3001',
+    };
+    const configService = {
+      get: jest.fn((key: string, defaultValue?: unknown) => values[key] ?? defaultValue),
+    };
+    const service = new EmailService(configService as never);
+
+    const result = await service.sendPasswordResetEmail(
+      'owner@example.com',
+      'owner',
+      'http://localhost:3001/reset-password?token=abc123def456',
+      1800,
+    );
+
+    expect(result).toBe(true);
+    expect(sentMailOptions).toBeDefined();
+    expect(sentMailOptions!.from).toBe('Portfolio Manager <noreply@example.com>');
+    expect(sentMailOptions!.html).toEqual(
+      expect.stringContaining('http://localhost:3001/reset-password?token=abc123def456'),
+    );
+    expect(sentMailOptions!.html).toEqual(expect.stringContaining('30 minutos'));
+  });
 });
