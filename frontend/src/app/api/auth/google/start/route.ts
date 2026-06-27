@@ -15,8 +15,8 @@ export async function GET() {
     maxAge: 600,
   });
 
-  const backendUrl = process.env.BACKEND_URL ?? "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
   return NextResponse.redirect(
-    `${backendUrl}/auth/google?state=${encodeURIComponent(state)}`,
+    `${appUrl}/auth/google?state=${encodeURIComponent(state)}`,
   );
 }
