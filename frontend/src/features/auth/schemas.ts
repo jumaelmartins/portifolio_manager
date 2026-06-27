@@ -28,6 +28,22 @@ export const verificationSchema = z.object({
   code: z.string().regex(/^\d{6}$/, "Enter the six-digit code"),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Enter a valid email"),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    password,
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
+
 export type LoginValues = z.infer<typeof loginSchema>;
 export type RegistrationValues = z.infer<typeof registrationSchema>;
 export type VerificationValues = z.infer<typeof verificationSchema>;
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
