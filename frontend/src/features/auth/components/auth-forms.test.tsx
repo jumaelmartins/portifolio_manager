@@ -6,6 +6,7 @@ import { renderWithProviders } from "@/test/render-with-providers";
 import { ForgotPasswordForm } from "./forgot-password-form";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
+import { ResetPasswordForm } from "./reset-password-form";
 import { VerificationForm } from "./verification-form";
 
 const router = {
@@ -14,8 +15,11 @@ const router = {
   refresh: vi.fn(),
 };
 
+const mockSearchParams = { get: vi.fn() };
+
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
+  useSearchParams: () => mockSearchParams,
 }));
 
 describe("authentication forms", () => {
@@ -192,6 +196,79 @@ describe("authentication forms", () => {
       );
 
       await screen.findByText("Ocorreu um erro. Tente novamente.");
+    });
+  });
+
+  describe("ResetPasswordForm", () => {
+    it("shows error state when no token is present in the URL", () => {
+      mockSearchParams.get.mockReturnValue(null);
+      renderWithProviders(<ResetPasswordForm />);
+
+      expect(screen.getByText("Link inválido")).toBeVisible();
+      expect(
+        screen.getByRole("link", { name: "Solicitar novo link" }),
+      ).toHaveAttribute("href", "/forgot-password");
+    });
+
+    it("validates password strength rules before submitting", async () => {
+      const user = userEvent.setup();
+      mockSearchParams.get.mockReturnValue("valid-token");
+      renderWithProviders(<ResetPasswordForm />);
+
+      await user.type(screen.getByLabelText("Nova senha"), "weakpassword");
+      await user.type(screen.getByLabelText("Confirmar senha"), "weakpassword");
+      await user.click(screen.getByRole("button", { name: "Redefinir senha" }));
+
+      expect(await screen.findByText("Add one uppercase letter")).toBeVisible();
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("submits { token, password } and redirects to /login?reset=success on success", async () => {
+      const user = userEvent.setup();
+      mockSearchParams.get.mockReturnValue("abc123");
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ message: "ok" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      renderWithProviders(<ResetPasswordForm />);
+
+      await user.type(screen.getByLabelText("Nova senha"), "StrongP@ss1");
+      await user.type(screen.getByLabelText("Confirmar senha"), "StrongP@ss1");
+      await user.click(screen.getByRole("button", { name: "Redefinir senha" }));
+
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/auth/reset-password",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ token: "abc123", password: "StrongP@ss1" }),
+        }),
+      );
+      await waitFor(() => {
+        expect(router.replace).toHaveBeenCalledWith("/login?reset=success");
+      });
+    });
+
+    it("shows invalid-token error state with link to /forgot-password on 400", async () => {
+      const user = userEvent.setup();
+      mockSearchParams.get.mockReturnValue("expired-token");
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: "Token expired or invalid" }),
+          { status: 400, headers: { "content-type": "application/json" } },
+        ),
+      );
+      renderWithProviders(<ResetPasswordForm />);
+
+      await user.type(screen.getByLabelText("Nova senha"), "StrongP@ss1");
+      await user.type(screen.getByLabelText("Confirmar senha"), "StrongP@ss1");
+      await user.click(screen.getByRole("button", { name: "Redefinir senha" }));
+
+      await screen.findByText("Link inválido");
+      expect(
+        screen.getByRole("link", { name: "Solicitar novo link" }),
+      ).toBeVisible();
     });
   });
 });
