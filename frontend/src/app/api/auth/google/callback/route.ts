@@ -32,6 +32,5 @@ export async function POST(request: Request) {
     maxAge: 0,
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
-  return NextResponse.redirect(new URL("/dashboard", appUrl), 303);
+  return NextResponse.redirect(new URL("/dashboard", request.url), 303);
 }
