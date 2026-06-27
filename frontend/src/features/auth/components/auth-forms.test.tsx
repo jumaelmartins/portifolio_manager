@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "@/test/render-with-providers";
+import { ForgotPasswordForm } from "./forgot-password-form";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
 import { VerificationForm } from "./verification-form";
@@ -111,5 +112,86 @@ describe("authentication forms", () => {
     expect(
       screen.getByRole("button", { name: "Signing In..." }),
     ).toBeDisabled();
+  });
+
+  describe("ForgotPasswordForm", () => {
+    it("renders the email field and submit button", () => {
+      renderWithProviders(<ForgotPasswordForm />);
+
+      expect(
+        screen.getByRole("textbox", { name: "Email address" }),
+      ).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: /Enviar link de redefinição/i }),
+      ).toBeVisible();
+    });
+
+    it("submits with correct payload and shows success state on 200", async () => {
+      const user = userEvent.setup();
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ message: "ok" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      renderWithProviders(<ForgotPasswordForm />);
+
+      await user.type(
+        screen.getByRole("textbox", { name: "Email address" }),
+        "user@example.com",
+      );
+      await user.click(
+        screen.getByRole("button", { name: /Enviar link de redefinição/i }),
+      );
+
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/auth/forgot-password",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ email: "user@example.com" }),
+        }),
+      );
+
+      await screen.findByText(
+        "Verifique sua caixa de entrada. Enviamos um link para redefinir sua senha.",
+      );
+    });
+
+    it("shows Google-account error (400 with message) inline", async () => {
+      const user = userEvent.setup();
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: "This account uses Google Sign-In." }),
+          { status: 400, headers: { "content-type": "application/json" } },
+        ),
+      );
+      renderWithProviders(<ForgotPasswordForm />);
+
+      await user.type(
+        screen.getByRole("textbox", { name: "Email address" }),
+        "user@example.com",
+      );
+      await user.click(
+        screen.getByRole("button", { name: /Enviar link de redefinição/i }),
+      );
+
+      await screen.findByText("This account uses Google Sign-In.");
+    });
+
+    it("shows generic error on network failure", async () => {
+      const user = userEvent.setup();
+      vi.mocked(fetch).mockRejectedValue(new Error("Network error"));
+      renderWithProviders(<ForgotPasswordForm />);
+
+      await user.type(
+        screen.getByRole("textbox", { name: "Email address" }),
+        "user@example.com",
+      );
+      await user.click(
+        screen.getByRole("button", { name: /Enviar link de redefinição/i }),
+      );
+
+      await screen.findByText("Ocorreu um erro. Tente novamente.");
+    });
   });
 });
