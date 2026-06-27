@@ -118,6 +118,38 @@ describe('PasswordResetService', () => {
       expect(response.retryAfterSeconds).toBeGreaterThan(0);
     });
 
+    it('throws 429 when a request was made less than 2 minutes ago', async () => {
+      prisma.f_user.findUnique.mockResolvedValue({
+        id: 1,
+        auth_method_id: 1,
+        email: 'owner@example.com',
+        username: 'owner',
+      });
+      // quota OK (< 3)
+      prisma.f_password_reset_token.count.mockResolvedValue(1);
+      // cooldown findFirst is the only findFirst call here (quota block is skipped)
+      prisma.f_password_reset_token.findFirst.mockResolvedValue({
+        created_at: new Date(Date.now() - 30_000),
+      });
+
+      let caught: unknown;
+      try {
+        await service.requestPasswordReset('owner@example.com');
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught).toBeInstanceOf(HttpException);
+      expect((caught as HttpException).getStatus()).toBe(429);
+      const response = (caught as HttpException).getResponse() as {
+        message: string;
+        retryAfterSeconds: number;
+      };
+      expect(response.message).toBe('wait for 2 minutes before sending a new request');
+      expect(response.retryAfterSeconds).toBeGreaterThan(0);
+      expect(response.retryAfterSeconds).toBeLessThanOrEqual(120);
+    });
+
     it('invalidates previous tokens, creates a new one, and sends the reset email', async () => {
       prisma.f_user.findUnique.mockResolvedValue({
         id: 42,
@@ -145,6 +177,26 @@ describe('PasswordResetService', () => {
         expect.stringContaining('/reset-password?token='),
         1800,
       );
+    });
+
+    it('deletes the orphaned token when the email fails to send', async () => {
+      prisma.f_user.findUnique.mockResolvedValue({
+        id: 42,
+        auth_method_id: 1,
+        email: 'owner@example.com',
+        username: 'owner',
+      });
+      emailService.sendPasswordResetEmail.mockResolvedValue(false);
+      // Also mock the delete call
+      (prisma.f_password_reset_token as any).delete = jest.fn().mockResolvedValue({});
+
+      await expect(
+        service.requestPasswordReset('owner@example.com'),
+      ).rejects.toThrow('error sending password reset email');
+
+      expect((prisma.f_password_reset_token as any).delete).toHaveBeenCalledWith({
+        where: { token: expect.any(String) },
+      });
     });
   });
 

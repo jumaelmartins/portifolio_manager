@@ -55,6 +55,8 @@ export class PasswordResetService {
     );
 
     if (!sent) {
+      // Remove the orphaned token so the user can retry without hitting the cooldown
+      await this.prisma.f_password_reset_token.delete({ where: { token } }).catch(() => null);
       throw new BadRequestException('error sending password reset email');
     }
   }
