@@ -22,11 +22,11 @@ describe('EmailService configuration', () => {
   it('uses configured SMTP security, numeric port, sender, and dynamic expiry', async () => {
     const values: Record<string, unknown> = {
       EMAIL_TRANSPORT: 'smtp',
-      EMAIL_HOST_DEV: 'smtp.example.com',
-      EMAIL_PORT_DEV: '465',
+      EMAIL_HOST: 'smtp.example.com',
+      EMAIL_PORT: '465',
       EMAIL_SECURE: 'true',
-      EMAIL_USERNAME_DEV: 'smtp-user',
-      EMAIL_PASSWORD_DEV: 'smtp-password',
+      EMAIL_USERNAME: 'smtp-user',
+      EMAIL_PASSWORD: 'smtp-password',
       EMAIL_FROM: 'Portfolio Manager <noreply@example.com>',
       FRONTEND_URL: 'http://localhost:3001',
     };
