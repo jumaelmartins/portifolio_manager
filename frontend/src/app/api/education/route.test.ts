@@ -58,6 +58,9 @@ describe("/api/education", () => {
       }),
     );
     expect(response.status).toBe(201);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({ id: 2, title: "BSc Computer Science", institutionName: "MIT" }),
+    );
     expect(backendFetch).toHaveBeenCalledWith("/education", {
       method: "POST",
       body: JSON.stringify({
@@ -69,5 +72,11 @@ describe("/api/education", () => {
         current: false,
       }),
     });
+  });
+
+  it("passes through backend error responses", async () => {
+    backendFetch.mockResolvedValue(new Response(null, { status: 500 }));
+    const response = await GET();
+    expect(response.status).toBe(500);
   });
 });

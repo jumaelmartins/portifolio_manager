@@ -73,4 +73,10 @@ describe("/api/courses", () => {
       }),
     });
   });
+
+  it("passes through backend error responses", async () => {
+    backendFetch.mockResolvedValue(new Response(null, { status: 500 }));
+    const response = await GET();
+    expect(response.status).toBe(500);
+  });
 });

@@ -77,4 +77,25 @@ describe("/api/experience/[id]", () => {
     expect(await response.json()).toEqual({ id: 5 });
     expect(backendFetch).toHaveBeenCalledWith("/experience/5", { method: "DELETE" });
   });
+
+  it("passes through backend error for GET", async () => {
+    backendFetch.mockResolvedValue(new Response(null, { status: 404 }));
+    const response = await GET(new Request("http://localhost/api/experience/5"), ctx("5"));
+    expect(response.status).toBe(404);
+  });
+
+  it("rejects invalid PATCH body with 400", async () => {
+    const response = await PATCH(
+      new Request("http://localhost/api/experience/5", {
+        method: "PATCH",
+        body: JSON.stringify({ title: "", companyName: "Acme", description: "Work", startDate: "2022-01-01", current: false }),
+      }),
+      ctx("5"),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({ status: 400, fieldErrors: expect.any(Object) }),
+    );
+    expect(backendFetch).not.toHaveBeenCalled();
+  });
 });
