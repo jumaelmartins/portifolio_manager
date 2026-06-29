@@ -59,6 +59,7 @@ services:
       - "3001:3001"
     environment:
       BACKEND_URL: http://backend:3000
+      BACKEND_PUBLIC_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3001
       SESSION_COOKIE_NAME: pm_session
       VERIFICATION_COOKIE_NAME: pm_verification
