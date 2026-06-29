@@ -41,9 +41,9 @@ export const navigationGroups: NavigationGroup[] = [
     label: "Content",
     items: [
       { label: "Projects", icon: FolderKanban, href: "/projects" },
-      { label: "Experience", icon: Briefcase, disabled: true },
-      { label: "Education", icon: GraduationCap, disabled: true },
-      { label: "Courses", icon: BookOpen, disabled: true },
+      { label: "Experience", icon: Briefcase, href: "/experience" },
+      { label: "Education", icon: GraduationCap, href: "/education" },
+      { label: "Courses", icon: BookOpen, href: "/courses" },
       { label: "Technologies", icon: Code2, disabled: true },
       { label: "Categories", icon: Tags, disabled: true },
       { label: "Custom Sections", icon: Blocks, disabled: true },
