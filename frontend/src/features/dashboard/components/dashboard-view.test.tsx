@@ -129,7 +129,7 @@ describe("DashboardView", () => {
     );
     expect(
       screen.getByRole("link", { name: /Portfolio Manager/ }),
-    ).toHaveAttribute("href", "/projects/7");
+    ).toHaveAttribute("href", "/projects/7/edit");
     expect(screen.getByText("Full Stack")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
