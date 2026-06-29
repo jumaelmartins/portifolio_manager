@@ -57,7 +57,7 @@ export function RecentProjects({
             {projects.map((project) => (
               <Link
                 key={project.id}
-                href={`/projects/${project.id}`}
+                href={`/projects/${project.id}/edit`}
                 className="group flex items-center gap-4 py-4 first:pt-0 last:pb-0 focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div
