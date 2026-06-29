@@ -62,7 +62,7 @@ describe("POST /api/auth/google/callback", () => {
     );
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(
-      "http://localhost/dashboard",
+      "http://localhost:3001/dashboard",
     );
   });
 });
