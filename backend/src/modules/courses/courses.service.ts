@@ -1,8 +1,12 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateCourseDto } from "./dto/create-course.dto";
-import { UpdateCourseDto } from "./dto/update-course.dto";
-import { CoursesRepository } from "./repository/courses.repository";
-import { UserRoles } from "../../utils/types";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
+import { CoursesRepository } from './repository/courses.repository';
+import { UserRoles } from '../../utils/types';
 
 @Injectable()
 export class CoursesService {
@@ -19,15 +23,22 @@ export class CoursesService {
 
   async findOne(id: number) {
     const course = await this.coursesRepository.findById(id);
-    if (!course) throw new NotFoundException("Course Not Found");
+    if (!course) throw new NotFoundException('Course Not Found');
     return course;
   }
 
-  async update(id: number, data: UpdateCourseDto, userId: number, role: number) {
+  async update(
+    id: number,
+    data: UpdateCourseDto,
+    userId: number,
+    role: number,
+  ) {
     const course = await this.coursesRepository.findById(id);
-    if (!course) throw new NotFoundException("Course Not Found");
+    if (!course) throw new NotFoundException('Course Not Found');
     if (course.f_userId !== userId && role !== UserRoles.SYSADMIN) {
-      throw new ForbiddenException("You do not have permission to edit this resource");
+      throw new ForbiddenException(
+        'You do not have permission to edit this resource',
+      );
     }
     return this.coursesRepository.update(id, {
       ...data,
@@ -38,9 +49,11 @@ export class CoursesService {
 
   async remove(id: number, userId: number, role: number) {
     const course = await this.coursesRepository.findById(id);
-    if (!course) throw new NotFoundException("Course Not Found");
+    if (!course) throw new NotFoundException('Course Not Found');
     if (course.f_userId !== userId && role !== UserRoles.SYSADMIN) {
-      throw new ForbiddenException("You do not have permission to delete this resource");
+      throw new ForbiddenException(
+        'You do not have permission to delete this resource',
+      );
     }
     return await this.coursesRepository.delete(id);
   }

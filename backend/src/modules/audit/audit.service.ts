@@ -6,9 +6,16 @@ import { UserRoles } from '../../utils/types';
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAuditLog(userId: number, role: number, entityType?: string, entityId?: number) {
+  async getAuditLog(
+    userId: number,
+    role: number,
+    entityType?: string,
+    entityId?: number,
+  ) {
     if (role !== UserRoles.SYSADMIN) {
-      throw new ForbiddenException('Apenas administradores podem acessar os logs completos.');
+      throw new ForbiddenException(
+        'Apenas administradores podem acessar os logs completos.',
+      );
     }
 
     return this.prisma.audit_log.findMany({

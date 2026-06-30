@@ -12,7 +12,7 @@ describe('parseAllowedOrigins', () => {
 });
 
 describe('setUploadSecurityHeaders', () => {
-  it('prevents MIME sniffing and document execution for public uploads', () => {
+  it('prevents MIME sniffing for public uploads', () => {
     const response = { setHeader: jest.fn() };
 
     setUploadSecurityHeaders(response);
@@ -22,12 +22,12 @@ describe('setUploadSecurityHeaders', () => {
       'nosniff',
     );
     expect(response.setHeader).toHaveBeenCalledWith(
-      'Content-Security-Policy',
-      "sandbox; default-src 'none'",
-    );
-    expect(response.setHeader).toHaveBeenCalledWith(
       'Referrer-Policy',
       'no-referrer',
+    );
+    expect(response.setHeader).not.toHaveBeenCalledWith(
+      'Content-Security-Policy',
+      expect.anything(),
     );
   });
 });

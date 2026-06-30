@@ -16,21 +16,23 @@ export class RolesRepository {
   }
 
   async findByRole(roleName: string): Promise<d_roles | null> {
-    return await this.prisma.d_roles.findFirst({ where: { role: roleName.toLowerCase() } });
+    return await this.prisma.d_roles.findFirst({
+      where: { role: roleName.toLowerCase() },
+    });
   }
 
   async create(roleData: CreateRoleDto): Promise<d_roles> {
     return await this.prisma.d_roles.create({ data: roleData });
-  } 
+  }
 
   async update(id: number, roleData: Partial<d_roles>): Promise<d_roles> {
     return await this.prisma.d_roles.update({
       where: { id },
       data: roleData,
     });
-  } 
+  }
 
   async delete(id: number) {
-    return await this.prisma.d_roles.delete({ where: { id } }); 
+    return await this.prisma.d_roles.delete({ where: { id } });
   }
 }

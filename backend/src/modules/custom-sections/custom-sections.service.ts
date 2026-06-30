@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CustomSectionsRepository } from './repository/custom-sections.repository';
 import { CreateCustomSectionDto } from './dto/create-section.dto';
 import { CreateCustomItemDto } from './dto/create-item.dto';
@@ -22,7 +27,12 @@ export class CustomSectionsService {
     return section;
   }
 
-  async updateSection(id: number, dto: Partial<CreateCustomSectionDto>, userId: number, role: number) {
+  async updateSection(
+    id: number,
+    dto: Partial<CreateCustomSectionDto>,
+    userId: number,
+    role: number,
+  ) {
     const section = await this.findSectionById(id);
     if (section.user_id !== userId && role !== UserRoles.SYSADMIN) {
       throw new ForbiddenException('Acesso negado');
@@ -38,7 +48,12 @@ export class CustomSectionsService {
     return this.repository.deleteSection(id);
   }
 
-  async createItem(sectionId: number, dto: CreateCustomItemDto, userId: number, role: number) {
+  async createItem(
+    sectionId: number,
+    dto: CreateCustomItemDto,
+    userId: number,
+    role: number,
+  ) {
     const section = await this.findSectionById(sectionId);
     if (section.user_id !== userId && role !== UserRoles.SYSADMIN) {
       throw new ForbiddenException('Acesso negado');
@@ -49,10 +64,15 @@ export class CustomSectionsService {
     return this.repository.createItem(sectionId, dto);
   }
 
-  async updateItem(itemId: number, dto: Partial<CreateCustomItemDto>, userId: number, role: number) {
+  async updateItem(
+    itemId: number,
+    dto: Partial<CreateCustomItemDto>,
+    userId: number,
+    role: number,
+  ) {
     const item = await this.repository.findItemById(itemId);
     if (!item) throw new NotFoundException('Item not found');
-    
+
     if (item.section.user_id !== userId && role !== UserRoles.SYSADMIN) {
       throw new ForbiddenException('Acesso negado');
     }
@@ -67,7 +87,7 @@ export class CustomSectionsService {
   async deleteItem(itemId: number, userId: number, role: number) {
     const item = await this.repository.findItemById(itemId);
     if (!item) throw new NotFoundException('Item not found');
-    
+
     if (item.section.user_id !== userId && role !== UserRoles.SYSADMIN) {
       throw new ForbiddenException('Acesso negado');
     }
@@ -75,12 +95,18 @@ export class CustomSectionsService {
     return this.repository.deleteItem(itemId);
   }
 
-  private validateItemDataAgainstSchema(data: Record<string, any>, schemaData: any) {
+  private validateItemDataAgainstSchema(
+    data: Record<string, any>,
+    schemaData: any,
+  ) {
     const schema = Array.isArray(schemaData) ? schemaData : [];
-    
+
     for (const field of schema) {
-      const { key, required } = field as any;
-      if (required && (data[key] === undefined || data[key] === null || data[key] === '')) {
+      const { key, required } = field;
+      if (
+        required &&
+        (data[key] === undefined || data[key] === null || data[key] === '')
+      ) {
         throw new BadRequestException(`Field '${key}' is required.`);
       }
     }

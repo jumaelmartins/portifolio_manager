@@ -1,13 +1,15 @@
-import { f_experience, Prisma } from "@prisma/client";
-import { PrismaService } from "../../../database/prisma.service";
-import { CreateExperienceDto } from "../dto/create-experience.dto";
-import { Injectable } from "@nestjs/common";
+import { f_experience, Prisma } from '@prisma/client';
+import { PrismaService } from '../../../database/prisma.service';
+import { CreateExperienceDto } from '../dto/create-experience.dto';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ExperienceRepository {
   constructor(private prismaService: PrismaService) {}
 
-  async create(data: CreateExperienceDto & { f_userId: number }): Promise<f_experience> {
+  async create(
+    data: CreateExperienceDto & { f_userId: number },
+  ): Promise<f_experience> {
     return await this.prismaService.f_experience.create({
       data: {
         tile: data.tile,
@@ -31,8 +33,14 @@ export class ExperienceRepository {
     return await this.prismaService.f_experience.findUnique({ where: { id } });
   }
 
-  async update(id: number, data: Prisma.f_experienceUpdateInput): Promise<f_experience | null> {
-    return await this.prismaService.f_experience.update({ where: { id }, data });
+  async update(
+    id: number,
+    data: Prisma.f_experienceUpdateInput,
+  ): Promise<f_experience | null> {
+    return await this.prismaService.f_experience.update({
+      where: { id },
+      data,
+    });
   }
 
   async delete(id: number) {

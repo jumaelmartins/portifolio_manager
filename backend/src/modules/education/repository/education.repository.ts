@@ -1,13 +1,15 @@
-import { f_education, Prisma } from "@prisma/client";
-import { PrismaService } from "../../../database/prisma.service";
-import { CreateEducationDto } from "../dto/create-education.dto";
-import { Injectable } from "@nestjs/common";
+import { f_education, Prisma } from '@prisma/client';
+import { PrismaService } from '../../../database/prisma.service';
+import { CreateEducationDto } from '../dto/create-education.dto';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class EducationRepository {
   constructor(private prismaService: PrismaService) {}
 
-  async create(data: CreateEducationDto & { f_userId: number }): Promise<f_education> {
+  async create(
+    data: CreateEducationDto & { f_userId: number },
+  ): Promise<f_education> {
     return await this.prismaService.f_education.create({
       data: {
         title: data.title,
@@ -31,7 +33,10 @@ export class EducationRepository {
     return await this.prismaService.f_education.findUnique({ where: { id } });
   }
 
-  async update(id: number, data: Prisma.f_educationUpdateInput): Promise<f_education | null> {
+  async update(
+    id: number,
+    data: Prisma.f_educationUpdateInput,
+  ): Promise<f_education | null> {
     return await this.prismaService.f_education.update({ where: { id }, data });
   }
 

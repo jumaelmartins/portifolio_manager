@@ -11,6 +11,5 @@ type HeaderResponse = {
 
 export function setUploadSecurityHeaders(response: HeaderResponse): void {
   response.setHeader('X-Content-Type-Options', 'nosniff');
-  response.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
   response.setHeader('Referrer-Policy', 'no-referrer');
 }

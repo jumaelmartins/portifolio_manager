@@ -1,8 +1,12 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateEducationDto } from "./dto/create-education.dto";
-import { UpdateEducationDto } from "./dto/update-education.dto";
-import { EducationRepository } from "./repository/education.repository";
-import { UserRoles } from "../../utils/types";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CreateEducationDto } from './dto/create-education.dto';
+import { UpdateEducationDto } from './dto/update-education.dto';
+import { EducationRepository } from './repository/education.repository';
+import { UserRoles } from '../../utils/types';
 
 @Injectable()
 export class EducationService {
@@ -19,15 +23,22 @@ export class EducationService {
 
   async findOne(id: number) {
     const education = await this.educationRepository.findById(id);
-    if (!education) throw new NotFoundException("Education Not Found");
+    if (!education) throw new NotFoundException('Education Not Found');
     return education;
   }
 
-  async update(id: number, data: UpdateEducationDto, userId: number, role: number) {
+  async update(
+    id: number,
+    data: UpdateEducationDto,
+    userId: number,
+    role: number,
+  ) {
     const education = await this.educationRepository.findById(id);
-    if (!education) throw new NotFoundException("Education Not Found");
+    if (!education) throw new NotFoundException('Education Not Found');
     if (education.f_userId !== userId && role !== UserRoles.SYSADMIN) {
-      throw new ForbiddenException("You do not have permission to edit this resource");
+      throw new ForbiddenException(
+        'You do not have permission to edit this resource',
+      );
     }
     return this.educationRepository.update(id, {
       ...data,
@@ -38,9 +49,11 @@ export class EducationService {
 
   async remove(id: number, userId: number, role: number) {
     const education = await this.educationRepository.findById(id);
-    if (!education) throw new NotFoundException("Education Not Found");
+    if (!education) throw new NotFoundException('Education Not Found');
     if (education.f_userId !== userId && role !== UserRoles.SYSADMIN) {
-      throw new ForbiddenException("You do not have permission to delete this resource");
+      throw new ForbiddenException(
+        'You do not have permission to delete this resource',
+      );
     }
     return await this.educationRepository.delete(id);
   }

@@ -5,6 +5,6 @@ import { EducationRepository } from './repository/education.repository';
 
 @Module({
   controllers: [EducationController],
-  providers: [EducationService,EducationRepository],
+  providers: [EducationService, EducationRepository],
 })
 export class EducationModule {}
