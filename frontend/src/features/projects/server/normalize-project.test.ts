@@ -39,7 +39,7 @@ describe("normalizeProject", () => {
       coverImage: {
         id: 9,
         description: null,
-        url: "http://localhost:3000/uploads/1/cover.png",
+        url: "/api/uploads/file/1/cover.png",
         createdAt: "2026-06-01T00:00:00.000Z",
         updatedAt: "2026-06-01T00:00:00.000Z",
       },

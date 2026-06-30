@@ -36,6 +36,7 @@ type ProjectFormProps = {
   defaultValues?: ProjectInput;
   onSubmit: (input: ProjectInput) => Promise<void>;
   onUpload: (file: File) => Promise<ImageOption>;
+  onDelete?: (imageId: number) => Promise<void>;
 };
 
 const emptyProject: ProjectInput = {
@@ -56,6 +57,7 @@ export function ProjectForm({
   defaultValues = emptyProject,
   onSubmit,
   onUpload,
+  onDelete,
 }: ProjectFormProps) {
   const [technologiesOpen, setTechnologiesOpen] = useState(false);
   const form = useForm<ProjectInput>({
@@ -212,6 +214,7 @@ export function ProjectForm({
                     value={field.value}
                     onChange={field.onChange}
                     onUpload={onUpload}
+                    onDelete={onDelete}
                   />
                 )}
               />

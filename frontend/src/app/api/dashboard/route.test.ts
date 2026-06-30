@@ -29,7 +29,7 @@ describe("GET /api/dashboard", () => {
               category: { id: 2, category: "full stack" },
               f_images: {
                 id: 9,
-                url: "http://localhost:3000/uploads/7/cover.png",
+                url: "/api/uploads/file/7/cover.png",
               },
               updated_at: "2026-06-12T10:00:00.000Z",
             },
@@ -66,7 +66,7 @@ describe("GET /api/dashboard", () => {
           category: { id: 2, name: "full stack" },
           coverImage: {
             id: 9,
-            url: "http://localhost:3000/uploads/7/cover.png",
+            url: "/api/uploads/file/7/cover.png",
           },
           updatedAt: "2026-06-12T10:00:00.000Z",
         },

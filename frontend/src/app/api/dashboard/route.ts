@@ -7,6 +7,7 @@ import type {
   DashboardProject,
   DashboardTechnology,
 } from "@/features/dashboard/types";
+import { rewriteUploadUrl } from "@/features/projects/server/normalize-project";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
 
@@ -47,7 +48,7 @@ function normalizeTechnology(
 function normalizeImage(
   image: BackendImage | null | undefined,
 ): DashboardImage | null {
-  return image ? { id: image.id, url: image.url } : null;
+  return image ? { id: image.id, url: rewriteUploadUrl(image.url) } : null;
 }
 
 function normalizeProject(project: BackendProject): DashboardProject {

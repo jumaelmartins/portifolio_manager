@@ -7,11 +7,20 @@ import type {
   ProjectInput,
 } from "../types";
 
+export function rewriteUploadUrl(url: string): string {
+  try {
+    const uploadPath = new URL(url).pathname.replace(/^\/uploads\//, "");
+    return `/api/uploads/file/${uploadPath}`;
+  } catch {
+    return url;
+  }
+}
+
 export function normalizeImage(image: BackendImage): ImageOption {
   return {
     id: image.id,
     description: image.description,
-    url: image.url,
+    url: rewriteUploadUrl(image.url),
     createdAt: image.created_at,
     updatedAt: image.updated_at,
   };

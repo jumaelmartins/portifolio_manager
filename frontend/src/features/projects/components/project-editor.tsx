@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   useCategories,
   useCreateProject,
+  useDeleteImage,
   useImages,
   useProject,
   useTechnologies,
@@ -45,6 +46,7 @@ export function ProjectEditor({ mode, projectId = 0 }: ProjectEditorProps) {
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
   const uploadImage = useUploadImage();
+  const deleteImageMutation = useDeleteImage();
   const editing = mode === "edit";
   const isPending =
     categories.isPending ||
@@ -131,6 +133,9 @@ export function ProjectEditor({ mode, projectId = 0 }: ProjectEditorProps) {
         onUpload={async (file) => {
           const result = await uploadImage.mutateAsync(file);
           return result.image;
+        }}
+        onDelete={async (imageId) => {
+          await deleteImageMutation.mutateAsync(imageId);
         }}
         onSubmit={async (input) => {
           if (editing) {

@@ -94,3 +94,9 @@ export function uploadImage(file: File) {
     body,
   });
 }
+
+export function deleteImage(imageId: number) {
+  return requestJson<{ id: number }>(`/api/uploads/${imageId}`, {
+    method: "DELETE",
+  });
+}

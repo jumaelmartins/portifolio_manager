@@ -9,6 +9,7 @@ import {
 import type { ProjectInput } from "../types";
 import {
   createProject,
+  deleteImage,
   deleteProject,
   getCategories,
   getImages,
@@ -120,6 +121,17 @@ export function useUploadImage() {
         queryClient.invalidateQueries({ queryKey: projectKeys.images }),
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
       ]);
+    },
+  });
+}
+
+export function useDeleteImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteImage,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: projectKeys.images });
     },
   });
 }
