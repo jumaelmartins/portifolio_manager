@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 export async function DELETE(
   _req: Request,
@@ -19,5 +20,7 @@ export async function DELETE(
   const response = await backendFetch(`/upload/${imageId}`, {
     method: "DELETE",
   });
+  if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return toBffResponse(response);
 }

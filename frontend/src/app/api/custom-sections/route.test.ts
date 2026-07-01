@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { backendFetch } = vi.hoisted(() => ({ backendFetch: vi.fn() }));
 vi.mock("@/lib/api/backend", () => ({ backendFetch }));
+vi.mock("@/lib/api/revalidate", () => ({ revalidatePortfolio: vi.fn() }));
 
 import { GET, POST } from "./route";
 

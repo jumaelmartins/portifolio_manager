@@ -4,6 +4,7 @@ import { normalizeImage } from "@/features/projects/server/normalize-project";
 import type { BackendImage } from "@/features/projects/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
   }
 
   const payload = (await uploadResponse.json()) as BackendUploadResponse;
+  await revalidatePortfolio();
   return NextResponse.json(
     {
       message: payload.message,

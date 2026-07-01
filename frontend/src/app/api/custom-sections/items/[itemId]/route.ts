@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 import { isDataObject } from "@/features/custom-sections/server/is-data-object";
 
 type RouteContext = { params: Promise<{ itemId: string }> };
@@ -22,12 +23,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!isDataObject(body)) {
     return NextResponse.json({ status: 400, message: "Item data is required" }, { status: 400 });
   }
-  return toBffResponse(
-    await backendFetch(`/custom-sections/items/${itemId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ data: body.data }),
-    }),
-  );
+  const response = await backendFetch(`/custom-sections/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ data: body.data }),
+  });
+  if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
+  return toBffResponse(response);
 }
 
 export async function DELETE(_req: Request, context: RouteContext) {
@@ -35,5 +37,6 @@ export async function DELETE(_req: Request, context: RouteContext) {
   if (!itemId) return invalidIdResponse();
   const response = await backendFetch(`/custom-sections/items/${itemId}`, { method: "DELETE" });
   if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json({ id: itemId });
 }

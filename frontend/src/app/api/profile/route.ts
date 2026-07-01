@@ -5,6 +5,7 @@ import { normalizeProfile } from "@/features/profile/server/normalize-profile";
 import type { BackendProfileData } from "@/features/profile/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 const profileUpdateBffSchema = z.object({
   username: z.string().optional(),
@@ -41,7 +42,8 @@ export async function PUT(request: Request) {
     backendBody.f_profile_pictureId = parsed.data.profilePictureId;
   }
 
-  return toBffResponse(
-    await backendFetch(`/users/${me.id}`, { method: "PUT", body: JSON.stringify(backendBody) }),
-  );
+  const updateResponse = await backendFetch(`/users/${me.id}`, { method: "PUT", body: JSON.stringify(backendBody) });
+  if (!updateResponse.ok) return toBffResponse(updateResponse);
+  await revalidatePortfolio();
+  return toBffResponse(updateResponse);
 }

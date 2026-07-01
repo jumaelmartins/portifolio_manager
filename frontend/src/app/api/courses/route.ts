@@ -8,6 +8,7 @@ import {
 import type { BackendCourse } from "@/features/courses/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 export async function GET() {
   const response = await backendFetch("/courses");
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
     body: JSON.stringify(toBackendCourseInput(parsed.data)),
   });
   if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json(normalizeCourse((await response.json()) as BackendCourse), {
     status: response.status,
   });

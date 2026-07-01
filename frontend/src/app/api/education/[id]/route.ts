@@ -8,6 +8,7 @@ import {
 import type { BackendEducation } from "@/features/education/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -43,6 +44,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     body: JSON.stringify(toBackendEducationInput(parsed.data)),
   });
   if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json(normalizeEducation((await response.json()) as BackendEducation), {
     status: response.status,
   });
@@ -53,5 +55,6 @@ export async function DELETE(_req: Request, context: RouteContext) {
   if (!id) return invalidIdResponse();
   const response = await backendFetch(`/education/${id}`, { method: "DELETE" });
   if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json({ id });
 }
