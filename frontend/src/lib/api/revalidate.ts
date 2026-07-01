@@ -11,5 +11,5 @@ export async function revalidatePortfolio(): Promise<void> {
   if (!token) return;
   const sub = decodeJwt(token).sub;
   if (!sub) return;
-  revalidateTag(`portfolio:${sub}`);
+  revalidateTag(`portfolio:${sub}`, "max");
 }

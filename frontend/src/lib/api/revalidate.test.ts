@@ -24,7 +24,7 @@ describe("revalidatePortfolio", () => {
     await revalidatePortfolio();
 
     expect(decodeJwt).toHaveBeenCalledWith("jwt-token");
-    expect(revalidateTag).toHaveBeenCalledWith("portfolio:7");
+    expect(revalidateTag).toHaveBeenCalledWith("portfolio:7", "max");
   });
 
   it("is a no-op when there is no session cookie", async () => {
