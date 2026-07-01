@@ -15,6 +15,7 @@ import {
   Settings,
   ShieldCheck,
   Tags,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,7 +47,7 @@ export const navigationGroups: NavigationGroup[] = [
       { label: "Courses", icon: BookOpen, href: "/courses" },
       { label: "Technologies", icon: Code2, disabled: true },
       { label: "Categories", icon: Tags, disabled: true },
-      { label: "Custom Sections", icon: Blocks, disabled: true },
+      { label: "Custom Sections", icon: Blocks, href: "/custom-sections" },
       { label: "Media", icon: ImageIcon, disabled: true },
     ],
   },
@@ -62,6 +63,7 @@ export const navigationGroups: NavigationGroup[] = [
   {
     label: "System",
     items: [
+      { label: "Profile", icon: UserCog, href: "/profile" },
       { label: "Public API", icon: Globe, disabled: true },
       { label: "Audit Logs", icon: ShieldCheck, disabled: true },
       { label: "Settings", icon: Settings, disabled: true },
