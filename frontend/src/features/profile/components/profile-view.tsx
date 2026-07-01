@@ -60,7 +60,7 @@ export function ProfileView() {
         onSubmit={async (values) => {
           await updateProfile.mutateAsync({
             email: values.email,
-            username: values.username ?? "",
+            ...(values.username ? { username: values.username } : {}),
           });
           toast.success("Profile updated");
         }}

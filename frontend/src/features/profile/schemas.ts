@@ -3,7 +3,7 @@ import { z } from "zod";
 export const profileSchema = z.object({
   username: z
     .string()
-    .min(3, "Username must be at least 3 characters")
+    .min(6, "Username must be at least 6 characters")
     .optional()
     .or(z.literal("")),
   email: z.string().min(1, "Email is required").email("Must be a valid email address"),

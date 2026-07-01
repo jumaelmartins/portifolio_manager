@@ -14,8 +14,8 @@ describe("profileSchema", () => {
     expect(profileSchema.safeParse({ email: "not-an-email", username: "" }).success).toBe(false);
   });
 
-  it("rejects a username shorter than 3 characters", () => {
-    expect(profileSchema.safeParse({ email: "a@b.com", username: "ab" }).success).toBe(false);
+  it("rejects a username shorter than 6 characters", () => {
+    expect(profileSchema.safeParse({ email: "a@b.com", username: "abcde" }).success).toBe(false);
   });
 });
 
