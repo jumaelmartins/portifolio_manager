@@ -46,7 +46,7 @@ export const navigationGroups: NavigationGroup[] = [
       { label: "Courses", icon: BookOpen, href: "/courses" },
       { label: "Technologies", icon: Code2, disabled: true },
       { label: "Categories", icon: Tags, disabled: true },
-      { label: "Custom Sections", icon: Blocks, disabled: true },
+      { label: "Custom Sections", icon: Blocks, href: "/custom-sections" },
       { label: "Media", icon: ImageIcon, disabled: true },
     ],
   },

@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle, Save } from "lucide-react";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 
 import { FieldErrors } from "@/features/auth/components/field-errors";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export function ItemForm({ fields, defaultValues, submitLabel, onSubmit, onCance
   );
 
   const form = useForm<Record<string, string>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as unknown as Resolver<Record<string, string>>,
     defaultValues: initialValues,
     criteriaMode: "all",
     shouldFocusError: true,
