@@ -2,19 +2,9 @@ import { NextResponse } from "next/server";
 
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { isDataObject } from "@/features/custom-sections/server/is-data-object";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function isDataObject(value: unknown): value is { data: Record<string, unknown> } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "data" in value &&
-    typeof (value as { data: unknown }).data === "object" &&
-    (value as { data: unknown }).data !== null &&
-    !Array.isArray((value as { data: unknown }).data)
-  );
-}
 
 export async function POST(request: Request, context: RouteContext) {
   const id = Number((await context.params).id);
