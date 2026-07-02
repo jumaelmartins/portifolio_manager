@@ -5,6 +5,21 @@ import { cookies } from "next/headers";
 
 import { SESSION_COOKIE } from "./cookies";
 
+// Matches backend UserRoles.SYSADMIN (see backend/src/utils/types.ts).
+// The JWT `role` claim is the numeric role id serialized as a string.
+export const SYSADMIN_ROLE = "1";
+
+export function roleFromToken(token: string | undefined): string | null {
+  if (!token) return null;
+  const role = decodeJwt(token).role;
+  return role == null ? null : String(role);
+}
+
+export async function getSessionRole(): Promise<string | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  return roleFromToken(token);
+}
+
 export function sessionMaxAge(
   token: string,
   now = Math.floor(Date.now() / 1000),
