@@ -107,8 +107,8 @@ Criar uma plataforma para gerenciar conteúdo profissional de forma centralizada
 
 ### Recursos planejados
 
-- [ ] Perfil público gerenciável;
-- [ ] Preview público do portfólio;
+- [x] Perfil público gerenciável;
+- [x] Preview público do portfólio;
 - [ ] Status de publicação para projetos;
 - [ ] Ordenação e destaque de projetos;
 - [ ] Editor Markdown/Rich Text;
@@ -123,16 +123,16 @@ Criar uma plataforma para gerenciar conteúdo profissional de forma centralizada
 - [ ] Integração futura com GitHub;
 - [ ] Versão demo pública;
 - [ ] Seeds para ambiente de demonstração;
-- [ ] CI/CD;
-- [ ] Telas administrativas para experiências, formações e cursos.
+- [x] CI/CD;
+- [x] Telas administrativas para experiências, formações e cursos.
 
 ---
 
 ## Status atual
 
-O backend e a fundação do frontend administrativo estão implementados. O sistema já oferece autenticação completa, dashboard, gerenciamento visual de projetos, upload de capas, API pública, auditoria e execução containerizada.
+O backend está completo e o frontend administrativo cobre todos os módulos de conteúdo. O sistema já oferece autenticação completa, dashboard, CRUD visual de projetos, experiências, formações, cursos, seções customizadas, categorias e tecnologias, perfil público, upload de capas, API pública, auditoria e execução containerizada. O site público do portfólio (`/portfolio/[userId]`, com SEO e responsividade) também está no ar.
 
-As próximas etapas do frontend são os módulos administrativos de experiências, formações, cursos, perfil público e preview do portfólio.
+A etapa atual é a **Fase 5 — Polimento e Extras**: reordenação drag-and-drop, paginação e filtros avançados, testes E2E de fluxos de conteúdo e soft-delete/arquivamento. O detalhamento por fase está em [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
@@ -696,14 +696,14 @@ Possibilidades futuras:
 - [x] Criar tela de verificação de e-mail;
 - [x] Criar dashboard;
 - [x] Criar CRUD visual de projetos;
-- [ ] Criar CRUD visual de categorias;
-- [ ] Criar CRUD visual de tecnologias;
-- [ ] Criar CRUD visual de experiências;
-- [ ] Criar CRUD visual de formações;
-- [ ] Criar CRUD visual de cursos;
+- [x] Criar CRUD visual de categorias;
+- [x] Criar CRUD visual de tecnologias;
+- [x] Criar CRUD visual de experiências;
+- [x] Criar CRUD visual de formações;
+- [x] Criar CRUD visual de cursos;
 - [x] Integrar upload e seleção de capa em projetos;
-- [ ] Criar módulo de perfil público;
-- [ ] Criar preview público.
+- [x] Criar módulo de perfil público;
+- [x] Criar preview público.
 
 ### Fase 3 — Recursos open-source/comunidade
 
