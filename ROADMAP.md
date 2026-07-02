@@ -1,6 +1,6 @@
 # Portfolio Manager — Roadmap
 
-> Atualizado em 2026-07-01
+> Atualizado em 2026-07-02
 
 ## Legenda
 - ✅ Concluído
@@ -72,18 +72,26 @@
 
 ---
 
-## Fase 5 — Polimento e Extras ⬜
+## Fase 5 — Polimento e Extras 🔄
 
 | Item | Status |
 |---|---|
-| Admin: gestão de Categories e Technologies (CRUD) | ⬜ |
+| Admin: gestão de Categories e Technologies (CRUD) | ✅ |
 | Reordenação de itens (drag-and-drop) | ⬜ |
 | Paginação e filtros avançados | ⬜ |
 | Testes E2E frontend (Playwright) para fluxos de conteúdo | ⬜ |
 | Soft-delete / arquivamento de itens | ⬜ |
 
+> **Categories/Technologies CRUD** entregue em 2026-07-02 (merge em `master`,
+> commit `00bd7d1`): CRUD page-per-record espelhando o módulo Experience, para
+> os dois lookups globais. Categories tem CRUD completo para qualquer usuário
+> ativo; Technologies permite create/edit a qualquer ativo mas o delete é
+> admin-only (role-gated no frontend via sessão). Nav items reabilitados.
+
 ---
 
 ## Próximo passo
 
-**Fase 5 — Polimento e Extras** — Admin: gestão de Categories e Technologies (CRUD); reordenação de itens (drag-and-drop); paginação e filtros avançados; testes E2E frontend (Playwright) para fluxos de conteúdo; soft-delete / arquivamento de itens.
+**Fase 5 (continuação)** — itens restantes, cada um independente: reordenação
+de itens (drag-and-drop); paginação e filtros avançados; testes E2E frontend
+(Playwright) para fluxos de conteúdo; soft-delete / arquivamento de itens.
