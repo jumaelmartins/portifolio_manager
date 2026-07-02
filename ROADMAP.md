@@ -61,14 +61,14 @@
 
 ---
 
-## Fase 4 — Portfólio Público (Site) ⬜
+## Fase 4 — Portfólio Público (Site) ✅
 
 | Item | Status |
 |---|---|
-| Rota pública `/portfolio/[userId]` no frontend | ⬜ |
-| Renderização de todas as seções (projects, experience, education, courses, custom) | ⬜ |
-| SEO básico (metadata, OG tags) | ⬜ |
-| Responsividade mobile do site público | ⬜ |
+| Rota pública `/portfolio/[userId]` no frontend | ✅ |
+| Renderização de todas as seções (projects, experience, education, courses, custom) | ✅ |
+| SEO básico (metadata, OG tags) | ✅ |
+| Responsividade mobile do site público | ✅ |
 
 ---
 
@@ -86,4 +86,4 @@
 
 ## Próximo passo
 
-**Fase 4 — Portfólio Público (Site)** — Construir o site público que renderiza o portfólio a partir do módulo Public (read-only) do backend: rota `/portfolio/[userId]`, renderização de todas as seções (projects, experience, education, courses, custom sections), SEO básico (metadata, OG tags) e responsividade mobile.
+**Fase 5 — Polimento e Extras** — Admin: gestão de Categories e Technologies (CRUD); reordenação de itens (drag-and-drop); paginação e filtros avançados; testes E2E frontend (Playwright) para fluxos de conteúdo; soft-delete / arquivamento de itens.
