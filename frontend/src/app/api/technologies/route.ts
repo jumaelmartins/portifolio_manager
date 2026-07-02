@@ -1,24 +1,43 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
+import { technologySchema } from "@/features/technologies/schemas";
+import {
+  normalizeTechnology,
+  toBackendTechnologyInput,
+} from "@/features/technologies/server/normalize-technology";
+import type { BackendTechnology } from "@/features/technologies/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
-
-type BackendTechnology = {
-  id: number;
-  tech: string;
-};
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 export async function GET() {
   const response = await backendFetch("/technologies");
-  if (!response.ok) {
-    return toBffResponse(response);
-  }
+  if (!response.ok) return toBffResponse(response);
+  const items = (await response.json()) as BackendTechnology[];
+  return NextResponse.json(items.map(normalizeTechnology));
+}
 
-  const technologies = (await response.json()) as BackendTechnology[];
+export async function POST(request: Request) {
+  const parsed = technologySchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        status: 400,
+        message: "Invalid technology data",
+        fieldErrors: z.flattenError(parsed.error).fieldErrors,
+      },
+      { status: 400 },
+    );
+  }
+  const response = await backendFetch("/technologies", {
+    method: "POST",
+    body: JSON.stringify(toBackendTechnologyInput(parsed.data)),
+  });
+  if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json(
-    technologies.map((technology) => ({
-      id: technology.id,
-      name: technology.tech,
-    })),
+    normalizeTechnology((await response.json()) as BackendTechnology),
+    { status: response.status },
   );
 }
