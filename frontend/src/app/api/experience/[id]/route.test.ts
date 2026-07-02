@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { backendFetch } = vi.hoisted(() => ({ backendFetch: vi.fn() }));
 vi.mock("@/lib/api/backend", () => ({ backendFetch }));
 
+const { revalidatePortfolio } = vi.hoisted(() => ({ revalidatePortfolio: vi.fn() }));
+vi.mock("@/lib/api/revalidate", () => ({ revalidatePortfolio }));
+
 import { DELETE, GET, PATCH } from "./route";
 
 const backendEntry = {
@@ -97,5 +100,41 @@ describe("/api/experience/[id]", () => {
       expect.objectContaining({ status: 400, fieldErrors: expect.any(Object) }),
     );
     expect(backendFetch).not.toHaveBeenCalled();
+  });
+
+  it("revalidates the portfolio after a successful update", async () => {
+    backendFetch.mockResolvedValue(Response.json(backendEntry));
+    await PATCH(
+      new Request("http://localhost/api/experience/5", {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: "Software Engineer",
+          companyName: "Acme Corp",
+          description: "Built things",
+          startDate: "2022-01-01",
+          current: true,
+        }),
+      }),
+      ctx("5"),
+    );
+    expect(revalidatePortfolio).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not revalidate when the backend write fails", async () => {
+    backendFetch.mockResolvedValue(new Response(null, { status: 500 }));
+    await PATCH(
+      new Request("http://localhost/api/experience/5", {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: "Software Engineer",
+          companyName: "Acme Corp",
+          description: "Built things",
+          startDate: "2022-01-01",
+          current: true,
+        }),
+      }),
+      ctx("5"),
+    );
+    expect(revalidatePortfolio).not.toHaveBeenCalled();
   });
 });

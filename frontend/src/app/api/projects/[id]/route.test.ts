@@ -7,6 +7,7 @@ const { backendFetch } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api/backend", () => ({ backendFetch }));
+vi.mock("@/lib/api/revalidate", () => ({ revalidatePortfolio: vi.fn() }));
 
 import { DELETE, GET, PATCH } from "./route";
 

@@ -8,6 +8,7 @@ import {
 import type { BackendExperience } from "@/features/experience/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 export async function GET() {
   const response = await backendFetch("/experience");
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
     body: JSON.stringify(toBackendExperienceInput(parsed.data)),
   });
   if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json(normalizeExperience((await response.json()) as BackendExperience), {
     status: response.status,
   });

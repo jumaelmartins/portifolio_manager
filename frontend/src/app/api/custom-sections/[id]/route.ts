@@ -5,6 +5,7 @@ import { customSectionSchema } from "@/features/custom-sections/schemas";
 import { toBackendSectionInput } from "@/features/custom-sections/server/normalize-custom-sections";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,12 +28,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       { status: 400 },
     );
   }
-  return toBffResponse(
-    await backendFetch(`/custom-sections/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(toBackendSectionInput(parsed.data)),
-    }),
-  );
+  const response = await backendFetch(`/custom-sections/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(toBackendSectionInput(parsed.data)),
+  });
+  if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
+  return toBffResponse(response);
 }
 
 export async function DELETE(_req: Request, context: RouteContext) {
@@ -40,5 +42,6 @@ export async function DELETE(_req: Request, context: RouteContext) {
   if (!id) return invalidIdResponse();
   const response = await backendFetch(`/custom-sections/${id}`, { method: "DELETE" });
   if (!response.ok) return toBffResponse(response);
+  await revalidatePortfolio();
   return NextResponse.json({ id });
 }

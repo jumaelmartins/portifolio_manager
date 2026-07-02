@@ -9,6 +9,7 @@ import {
 import type { BackendProject } from "@/features/projects/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 type ProjectRouteContext = {
   params: Promise<{ id: string }>;
@@ -69,6 +70,7 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
     return toBffResponse(response);
   }
 
+  await revalidatePortfolio();
   return NextResponse.json(
     normalizeProject((await response.json()) as BackendProject),
     { status: response.status },
@@ -88,5 +90,6 @@ export async function DELETE(_request: Request, context: ProjectRouteContext) {
     return toBffResponse(response);
   }
 
+  await revalidatePortfolio();
   return NextResponse.json({ id });
 }

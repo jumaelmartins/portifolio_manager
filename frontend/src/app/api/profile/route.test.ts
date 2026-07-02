@@ -7,6 +7,7 @@ const { backendFetch, clearSessionCookie } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api/backend", () => ({ backendFetch }));
 vi.mock("@/lib/auth/session", () => ({ clearSessionCookie }));
+vi.mock("@/lib/api/revalidate", () => ({ revalidatePortfolio: vi.fn() }));
 
 import { GET, PUT } from "./route";
 

@@ -9,6 +9,7 @@ import {
 import type { BackendProject } from "@/features/projects/types";
 import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
+import { revalidatePortfolio } from "@/lib/api/revalidate";
 
 export async function GET() {
   const response = await backendFetch("/projects");
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
   }
 
   const project = (await response.json()) as BackendProject;
+  await revalidatePortfolio();
   return NextResponse.json(normalizeProject(project), {
     status: response.status,
   });
