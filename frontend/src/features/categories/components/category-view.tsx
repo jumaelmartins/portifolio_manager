@@ -9,7 +9,12 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortSelect } from "@/components/ui/sort-select";
+import { useListControls } from "@/lib/list-controls/use-list-controls";
+import type { SortOption } from "@/lib/list-controls/types";
 import type { CategoryEntry } from "../types";
 import { CategoryMobileList } from "./category-mobile-list";
 import { CategoryTable } from "./category-table";
@@ -24,9 +29,10 @@ type CategoryViewProps = {
   onDelete: (entry: CategoryEntry) => Promise<void>;
 };
 
-function sortByName(entries: CategoryEntry[]) {
-  return [...entries].sort((a, b) => a.name.localeCompare(b.name));
-}
+const CATEGORY_SORTS: SortOption<CategoryEntry>[] = [
+  { key: "name-asc", label: "Name A–Z", compare: (a, b) => a.name.localeCompare(b.name) },
+  { key: "name-desc", label: "Name Z–A", compare: (a, b) => b.name.localeCompare(a.name) },
+];
 
 function CategorySkeleton() {
   return (
@@ -52,6 +58,13 @@ export function CategoryView({
   const searchParams = useSearchParams();
   const [entryToDelete, setEntryToDelete] = useState<CategoryEntry | null>(null);
 
+  const controls = useListControls<CategoryEntry>({
+    items: entries,
+    basePath: "/categories",
+    searchAccessor: (entry) => entry.name,
+    sorts: CATEGORY_SORTS,
+  });
+
   useEffect(() => {
     const created = searchParams.get("created") === "1";
     const updated = searchParams.get("updated") === "1";
@@ -70,8 +83,6 @@ export function CategoryView({
       <ErrorState title="Categories unavailable" description={error.message} onRetry={onRetry} />
     );
   }
-
-  const sorted = sortByName(entries);
 
   return (
     <div className="space-y-6">
@@ -104,11 +115,48 @@ export function CategoryView({
         />
       ) : (
         <>
-          <CategoryTable entries={sorted} canDelete={canDelete} onDelete={setEntryToDelete} />
-          <CategoryMobileList entries={sorted} canDelete={canDelete} onDelete={setEntryToDelete} />
-          <p className="text-sm text-muted-foreground">
-            {entries.length} {entries.length === 1 ? "category" : "categories"}
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={controls.query}
+              onChange={controls.setQuery}
+              placeholder="Search categories..."
+            />
+            <SortSelect
+              value={controls.sortKey}
+              options={CATEGORY_SORTS}
+              onValueChange={controls.setSortKey}
+            />
+          </div>
+          {controls.totalFiltered === 0 ? (
+            <EmptyState
+              title="No matching categories"
+              description="Adjust or clear the search to see more categories."
+              action={
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                  onClick={controls.reset}
+                >
+                  Clear search
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <CategoryTable entries={controls.pageItems} canDelete={canDelete} onDelete={setEntryToDelete} />
+              <CategoryMobileList entries={controls.pageItems} canDelete={canDelete} onDelete={setEntryToDelete} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
+                </p>
+                <Pagination
+                  page={controls.page}
+                  pageCount={controls.pageCount}
+                  onPageChange={controls.goToPage}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
