@@ -10,12 +10,28 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortSelect } from "@/components/ui/sort-select";
+import { useListControls } from "@/lib/list-controls/use-list-controls";
+import type { SortOption } from "@/lib/list-controls/types";
 import { useDeleteSection, useSections } from "../api/custom-sections-queries";
 import type { CustomSection } from "../types";
 import { DeleteSectionDialog } from "./delete-section-dialog";
 import { ItemsDrawer } from "./items-drawer";
 import { SectionCard } from "./section-card";
+
+const SECTION_SORTS: SortOption<CustomSection>[] = [
+  {
+    key: "order",
+    label: "Manual order",
+    compare: (a, b) =>
+      (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER),
+  },
+  { key: "name-asc", label: "Name A–Z", compare: (a, b) => a.name.localeCompare(b.name) },
+  { key: "name-desc", label: "Name Z–A", compare: (a, b) => b.name.localeCompare(a.name) },
+];
 
 export function SectionsView() {
   const router = useRouter();
@@ -24,6 +40,13 @@ export function SectionsView() {
   const deleteSection = useDeleteSection();
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
   const [sectionToDelete, setSectionToDelete] = useState<CustomSection | null>(null);
+
+  const controls = useListControls<CustomSection>({
+    items: sections.data ?? [],
+    basePath: "/custom-sections",
+    searchAccessor: (section) => `${section.name} ${section.description ?? ""}`,
+    sorts: SECTION_SORTS,
+  });
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -92,16 +115,58 @@ export function SectionsView() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {data.map((section) => (
-            <SectionCard
-              key={section.id}
-              section={section}
-              onManageItems={setActiveSectionId}
-              onDelete={setSectionToDelete}
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={controls.query}
+              onChange={controls.setQuery}
+              placeholder="Search sections..."
             />
-          ))}
-        </div>
+            <SortSelect
+              value={controls.sortKey}
+              options={SECTION_SORTS}
+              onValueChange={controls.setSortKey}
+            />
+          </div>
+          {controls.totalFiltered === 0 ? (
+            <EmptyState
+              title="No matching sections"
+              description="Adjust or clear the search to see more sections."
+              action={
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                  onClick={controls.reset}
+                >
+                  Clear search
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {controls.pageItems.map((section) => (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    onManageItems={setActiveSectionId}
+                    onDelete={setSectionToDelete}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
+                </p>
+                <Pagination
+                  page={controls.page}
+                  pageCount={controls.pageCount}
+                  onPageChange={controls.goToPage}
+                />
+              </div>
+            </>
+          )}
+        </>
       )}
 
       <ItemsDrawer
