@@ -100,6 +100,20 @@ async function main() {
   await prisma.f_projects.deleteMany({ where: { f_userId: verified.id } });
   await prisma.f_experience.deleteMany({ where: { f_userId: verified.id } });
   await prisma.f_education.deleteMany({ where: { f_userId: verified.id } });
+  await prisma.f_education.createMany({
+    data: Array.from({ length: 12 }, (_, index) => {
+      const label = String(index + 1).padStart(2, '0');
+      return {
+        title: `Seeded Education ${label}`,
+        institution_name: `Seeded University ${label}`,
+        description: null,
+        start_date: new Date(`${2013 + index}-01-01T00:00:00.000Z`),
+        end_date: null,
+        current: false,
+        f_userId: verified.id,
+      };
+    }),
+  });
   await prisma.f_courses.deleteMany({ where: { f_userId: verified.id } });
   // custom_section_item rows cascade when their section is removed.
   await prisma.custom_section.deleteMany({ where: { user_id: verified.id } });

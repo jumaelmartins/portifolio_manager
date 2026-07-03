@@ -44,8 +44,41 @@ test.describe("education management", () => {
 
     await page.getByRole("button", { name: `Delete ${degree}` }).click();
     await page.getByRole("button", { name: "Delete education" }).click();
+    // 12 seeded rows remain, so the list is never empty — assert the deleted
+    // entry is gone instead of the empty-state heading.
+    await expect(page.getByText(degree)).toHaveCount(0);
+  });
+
+  test("paginates, sorts, and searches the education list", async ({ page }) => {
+    await page.goto("/education");
+
+    await expect(page.getByText("Showing 1–10 of 12")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "No education yet" }),
+      page.getByText("Seeded Education 12").filter({ visible: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Seeded Education 01")).toHaveCount(0);
+
+    // Page 2 holds the two oldest seeded entries.
+    await page.getByRole("button", { name: "Page 2" }).click();
+    await expect(page.getByText("Showing 11–12 of 12")).toBeVisible();
+    await expect(
+      page.getByText("Seeded Education 01").filter({ visible: true }),
+    ).toBeVisible();
+
+    // Oldest-start sort brings the oldest entry onto page 1.
+    await page.getByRole("button", { name: "Page 1" }).click();
+    await page.getByRole("combobox", { name: "Sort" }).click();
+    await page.getByRole("option", { name: "Oldest start" }).click();
+    await expect(
+      page.getByText("Seeded Education 01").filter({ visible: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Seeded Education 12")).toHaveCount(0);
+
+    // Search narrows to a single row.
+    await page.getByRole("searchbox").fill("Seeded Education 05");
+    await expect(page.getByText("Showing 1–1 of 1")).toBeVisible();
+    await expect(
+      page.getByText("Seeded Education 05").filter({ visible: true }),
     ).toBeVisible();
   });
 });

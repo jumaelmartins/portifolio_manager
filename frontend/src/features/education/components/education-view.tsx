@@ -9,7 +9,12 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortSelect } from "@/components/ui/sort-select";
+import { useListControls } from "@/lib/list-controls/use-list-controls";
+import type { SortOption } from "@/lib/list-controls/types";
 import type { EducationEntry } from "../types";
 import { DeleteEducationDialog } from "./delete-education-dialog";
 import { EducationMobileList } from "./education-mobile-list";
@@ -23,9 +28,11 @@ type EducationViewProps = {
   onDelete: (entry: EducationEntry) => Promise<void>;
 };
 
-function sortByStartDateDesc(entries: EducationEntry[]) {
-  return [...entries].sort((a, b) => b.startDate.localeCompare(a.startDate));
-}
+const EDUCATION_SORTS: SortOption<EducationEntry>[] = [
+  { key: "recent", label: "Newest start", compare: (a, b) => b.startDate.localeCompare(a.startDate) },
+  { key: "oldest", label: "Oldest start", compare: (a, b) => a.startDate.localeCompare(b.startDate) },
+  { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
+];
 
 function EducationSkeleton() {
   return (
@@ -50,6 +57,13 @@ export function EducationView({
   const searchParams = useSearchParams();
   const [entryToDelete, setEntryToDelete] = useState<EducationEntry | null>(null);
 
+  const controls = useListControls<EducationEntry>({
+    items: entries,
+    basePath: "/education",
+    searchAccessor: (entry) => `${entry.title} ${entry.institutionName}`,
+    sorts: EDUCATION_SORTS,
+  });
+
   useEffect(() => {
     const created = searchParams.get("created") === "1";
     const updated = searchParams.get("updated") === "1";
@@ -68,8 +82,6 @@ export function EducationView({
       <ErrorState title="Education unavailable" description={error.message} onRetry={onRetry} />
     );
   }
-
-  const sorted = sortByStartDateDesc(entries);
 
   return (
     <div className="space-y-6">
@@ -102,11 +114,48 @@ export function EducationView({
         />
       ) : (
         <>
-          <EducationTable entries={sorted} onDelete={setEntryToDelete} />
-          <EducationMobileList entries={sorted} onDelete={setEntryToDelete} />
-          <p className="text-sm text-muted-foreground">
-            {entries.length} {entries.length === 1 ? "entry" : "entries"}
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={controls.query}
+              onChange={controls.setQuery}
+              placeholder="Search education..."
+            />
+            <SortSelect
+              value={controls.sortKey}
+              options={EDUCATION_SORTS}
+              onValueChange={controls.setSortKey}
+            />
+          </div>
+          {controls.totalFiltered === 0 ? (
+            <EmptyState
+              title="No matching education"
+              description="Adjust or clear the search to see more entries."
+              action={
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                  onClick={controls.reset}
+                >
+                  Clear search
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <EducationTable entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <EducationMobileList entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
+                </p>
+                <Pagination
+                  page={controls.page}
+                  pageCount={controls.pageCount}
+                  onPageChange={controls.goToPage}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
