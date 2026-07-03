@@ -79,7 +79,7 @@
 | Admin: gestão de Categories e Technologies (CRUD) | ✅ |
 | Reordenação de itens (drag-and-drop) | ⬜ |
 | Paginação e filtros avançados | ⬜ |
-| Testes E2E frontend (Playwright) para fluxos de conteúdo | ⬜ |
+| Testes E2E frontend (Playwright) para fluxos de conteúdo | ✅ |
 | Soft-delete / arquivamento de itens | ⬜ |
 
 > **Categories/Technologies CRUD** entregue em 2026-07-02 (merge em `master`,
@@ -88,10 +88,18 @@
 > ativo; Technologies permite create/edit a qualquer ativo mas o delete é
 > admin-only (role-gated no frontend via sessão). Nav items reabilitados.
 
+> **Testes E2E de conteúdo (Playwright)** entregues em 2026-07-02 (branch
+> `feat/e2e-content-flows`, commit `8b042df`): specs create → edit → delete para
+> experience, education, courses e custom sections, mais lookups (categories CRUD
+> completo; technologies create/edit + assert de que o delete fica oculto para
+> usuário regular). Seed e2e limpa as tabelas de conteúdo do usuário verificado e
+> os lookups descartáveis (`E2E `-prefixados, case-insensitive) entre execuções.
+> Validado local: chromium 8/8 (1 flaky, passou no retry) e mobile 8/8.
+
 ---
 
 ## Próximo passo
 
 **Fase 5 (continuação)** — itens restantes, cada um independente: reordenação
-de itens (drag-and-drop); paginação e filtros avançados; testes E2E frontend
-(Playwright) para fluxos de conteúdo; soft-delete / arquivamento de itens.
+de itens (drag-and-drop); paginação e filtros avançados; soft-delete /
+arquivamento de itens.
