@@ -1,7 +1,6 @@
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,47 +10,29 @@ import {
 } from "@/components/ui/select";
 import type { CategoryOption, TechnologyOption } from "../types";
 
-export type ProjectFiltersValue = {
-  query: string;
+type ProjectFiltersProps = {
   categoryId: number | null;
   technologyId: number | null;
-};
-
-type ProjectFiltersProps = {
-  value: ProjectFiltersValue;
   categories: CategoryOption[];
   technologies: TechnologyOption[];
-  onChange: (value: ProjectFiltersValue) => void;
+  onCategoryChange: (id: number | null) => void;
+  onTechnologyChange: (id: number | null) => void;
+  onClear: () => void;
+  showClear: boolean;
 };
 
 export function ProjectFilters({
-  value,
+  categoryId,
+  technologyId,
   categories,
   technologies,
-  onChange,
+  onCategoryChange,
+  onTechnologyChange,
+  onClear,
+  showClear,
 }: ProjectFiltersProps) {
-  const hasFilters =
-    value.query !== "" ||
-    value.categoryId !== null ||
-    value.technologyId !== null;
-
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-      <div className="relative min-w-0 flex-1 lg:max-w-md">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          type="search"
-          value={value.query}
-          onChange={(event) =>
-            onChange({ ...value, query: event.currentTarget.value })
-          }
-          placeholder="Search projects..."
-          className="h-10 bg-card/60 pl-9"
-        />
-      </div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="grid grid-cols-2 gap-3 sm:flex">
         <Select
           items={Object.fromEntries([
@@ -61,13 +42,11 @@ export function ProjectFilters({
               category.name,
             ]),
           ])}
-          value={value.categoryId?.toString() ?? "all"}
+          value={categoryId?.toString() ?? "all"}
           onValueChange={(nextValue) =>
-            onChange({
-              ...value,
-              categoryId:
-                nextValue && nextValue !== "all" ? Number(nextValue) : null,
-            })
+            onCategoryChange(
+              nextValue && nextValue !== "all" ? Number(nextValue) : null,
+            )
           }
         >
           <SelectTrigger
@@ -93,13 +72,11 @@ export function ProjectFilters({
               technology.name,
             ]),
           ])}
-          value={value.technologyId?.toString() ?? "all"}
+          value={technologyId?.toString() ?? "all"}
           onValueChange={(nextValue) =>
-            onChange({
-              ...value,
-              technologyId:
-                nextValue && nextValue !== "all" ? Number(nextValue) : null,
-            })
+            onTechnologyChange(
+              nextValue && nextValue !== "all" ? Number(nextValue) : null,
+            )
           }
         >
           <SelectTrigger
@@ -118,14 +95,12 @@ export function ProjectFilters({
           </SelectContent>
         </Select>
       </div>
-      {hasFilters ? (
+      {showClear ? (
         <Button
           type="button"
           variant="ghost"
-          className="h-10 justify-center lg:justify-start"
-          onClick={() =>
-            onChange({ query: "", categoryId: null, technologyId: null })
-          }
+          className="h-10 justify-center sm:justify-start"
+          onClick={onClear}
         >
           <X data-icon="inline-start" />
           Clear filters

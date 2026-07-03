@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FolderPlus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,17 +9,15 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import type {
-  CategoryOption,
-  Project,
-  TechnologyOption,
-} from "../types";
+import { SortSelect } from "@/components/ui/sort-select";
+import { useListControls } from "@/lib/list-controls/use-list-controls";
+import type { SortOption } from "@/lib/list-controls/types";
+import type { CategoryOption, Project, TechnologyOption } from "../types";
 import { DeleteProjectDialog } from "./delete-project-dialog";
-import {
-  ProjectFilters,
-  type ProjectFiltersValue,
-} from "./project-filters";
+import { ProjectFilters } from "./project-filters";
 import { ProjectMobileList } from "./project-mobile-list";
 import { ProjectSummary } from "./project-summary";
 import { ProjectTable } from "./project-table";
@@ -33,6 +31,13 @@ type ProjectsViewProps = {
   onRetry: () => void;
   onDelete: (project: Project) => Promise<void>;
 };
+
+const PROJECT_SORTS: SortOption<Project>[] = [
+  { key: "recent", label: "Recent", compare: (a, b) => b.createdAt.localeCompare(a.createdAt) },
+  { key: "oldest", label: "Oldest", compare: (a, b) => a.createdAt.localeCompare(b.createdAt) },
+  { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
+  { key: "title-desc", label: "Title Z–A", compare: (a, b) => b.title.localeCompare(a.title) },
+];
 
 function positiveOption(value: string | null, options: Array<{ id: number }>) {
   const id = Number(value);
@@ -73,15 +78,25 @@ export function ProjectsView({
 }: ProjectsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState<ProjectFiltersValue>(() => ({
-    query: searchParams.get("q")?.trim() ?? "",
-    categoryId: positiveOption(searchParams.get("category"), categories),
-    technologyId: positiveOption(
-      searchParams.get("technology"),
-      technologies,
-    ),
-  }));
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
+  const controls = useListControls<Project>({
+    items: projects,
+    basePath: "/projects",
+    searchAccessor: (project) => `${project.title} ${project.description}`,
+    sorts: PROJECT_SORTS,
+    extraParamKeys: ["category", "technology"],
+    predicate: (project, { getParam }) => {
+      const categoryId = positiveOption(getParam("category"), categories);
+      const technologyId = positiveOption(getParam("technology"), technologies);
+      const matchesCategory =
+        categoryId === null || project.category.id === categoryId;
+      const matchesTechnology =
+        technologyId === null ||
+        project.technologies.some((technology) => technology.id === technologyId);
+      return matchesCategory && matchesTechnology;
+    },
+  });
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -102,45 +117,6 @@ export function ProjectsView({
     });
   }, [router, searchParams]);
 
-  const filteredProjects = useMemo(() => {
-    const query = filters.query.trim().toLocaleLowerCase();
-    return projects.filter((project) => {
-      const matchesQuery =
-        query === "" ||
-        project.title.toLocaleLowerCase().includes(query) ||
-        project.description.toLocaleLowerCase().includes(query);
-      const matchesCategory =
-        filters.categoryId === null ||
-        project.category.id === filters.categoryId;
-      const matchesTechnology =
-        filters.technologyId === null ||
-        project.technologies.some(
-          (technology) => technology.id === filters.technologyId,
-        );
-      return matchesQuery && matchesCategory && matchesTechnology;
-    });
-  }, [filters, projects]);
-
-  function updateFilters(nextFilters: ProjectFiltersValue) {
-    setFilters(nextFilters);
-    const params = new URLSearchParams();
-    const query = nextFilters.query.trim();
-    if (query) {
-      params.set("q", query);
-    }
-    if (nextFilters.categoryId) {
-      params.set("category", String(nextFilters.categoryId));
-    }
-    if (nextFilters.technologyId) {
-      params.set("technology", String(nextFilters.technologyId));
-    }
-
-    const queryString = params.toString();
-    router.replace(queryString ? `/projects?${queryString}` : "/projects", {
-      scroll: false,
-    });
-  }
-
   if (isPending) {
     return <ProjectsSkeleton />;
   }
@@ -155,6 +131,16 @@ export function ProjectsView({
     );
   }
 
+  const selectedCategory = positiveOption(controls.getParam("category"), categories);
+  const selectedTechnology = positiveOption(
+    controls.getParam("technology"),
+    technologies,
+  );
+  const hasActiveFilters =
+    controls.query !== "" ||
+    selectedCategory !== null ||
+    selectedTechnology !== null;
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -167,10 +153,7 @@ export function ProjectsView({
             Manage the projects displayed in your public portfolio.
           </p>
         </div>
-        <Link
-          href="/projects/new"
-          className={buttonVariants({ size: "lg" })}
-        >
+        <Link href="/projects/new" className={buttonVariants({ size: "lg" })}>
           <Plus data-icon="inline-start" />
           New Project
         </Link>
@@ -182,10 +165,7 @@ export function ProjectsView({
           description="Create your first project to start presenting your work."
           icon={<FolderPlus className="size-5" aria-hidden="true" />}
           action={
-            <Link
-              href="/projects/new"
-              className={buttonVariants({ size: "lg" })}
-            >
+            <Link href="/projects/new" className={buttonVariants({ size: "lg" })}>
               Create your first project
             </Link>
           }
@@ -193,13 +173,33 @@ export function ProjectsView({
       ) : (
         <>
           <ProjectSummary projects={projects} />
-          <ProjectFilters
-            value={filters}
-            categories={categories}
-            technologies={technologies}
-            onChange={updateFilters}
-          />
-          {filteredProjects.length === 0 ? (
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <SearchInput
+              value={controls.query}
+              onChange={controls.setQuery}
+              placeholder="Search projects..."
+            />
+            <SortSelect
+              value={controls.sortKey}
+              options={PROJECT_SORTS}
+              onValueChange={controls.setSortKey}
+            />
+            <ProjectFilters
+              categoryId={selectedCategory}
+              technologyId={selectedTechnology}
+              categories={categories}
+              technologies={technologies}
+              onCategoryChange={(id) =>
+                controls.setParam("category", id === null ? null : String(id))
+              }
+              onTechnologyChange={(id) =>
+                controls.setParam("technology", id === null ? null : String(id))
+              }
+              onClear={controls.reset}
+              showClear={hasActiveFilters}
+            />
+          </div>
+          {controls.totalFiltered === 0 ? (
             <EmptyState
               title="No matching projects"
               description="Adjust or clear the filters to see more projects."
@@ -207,13 +207,7 @@ export function ProjectsView({
                 <button
                   type="button"
                   className={buttonVariants({ variant: "outline", size: "lg" })}
-                  onClick={() =>
-                    updateFilters({
-                      query: "",
-                      categoryId: null,
-                      technologyId: null,
-                    })
-                  }
+                  onClick={controls.reset}
                 >
                   Clear filters
                 </button>
@@ -222,16 +216,24 @@ export function ProjectsView({
           ) : (
             <>
               <ProjectTable
-                projects={filteredProjects}
+                projects={controls.pageItems}
                 onDelete={setProjectToDelete}
               />
               <ProjectMobileList
-                projects={filteredProjects}
+                projects={controls.pageItems}
                 onDelete={setProjectToDelete}
               />
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredProjects.length} of {projects.length} projects
-              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {controls.rangeStart}–{controls.rangeEnd} of{" "}
+                  {controls.totalFiltered}
+                </p>
+                <Pagination
+                  page={controls.page}
+                  pageCount={controls.pageCount}
+                  onPageChange={controls.goToPage}
+                />
+              </div>
             </>
           )}
         </>

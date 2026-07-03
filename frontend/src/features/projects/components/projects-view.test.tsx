@@ -107,6 +107,35 @@ describe("ProjectsView", () => {
     );
   });
 
+  it("sorts projects and stores the sort key in the URL", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ProjectsView
+        projects={projects}
+        categories={[]}
+        technologies={[]}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    // Default sort is "recent" (createdAt desc): Chat API (06-02) first.
+    let rows = within(screen.getByRole("table")).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Chat API");
+
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(screen.getByRole("option", { name: "Title Z–A" }));
+
+    expect(replace).toHaveBeenLastCalledWith("/projects?sort=title-desc", {
+      scroll: false,
+    });
+    rows = within(screen.getByRole("table")).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Portfolio Manager");
+  });
+
   it("shows loading, error, and empty portfolio states", () => {
     const { rerender } = render(
       <ProjectsView
