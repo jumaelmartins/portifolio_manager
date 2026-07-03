@@ -9,7 +9,12 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortSelect } from "@/components/ui/sort-select";
+import { useListControls } from "@/lib/list-controls/use-list-controls";
+import type { SortOption } from "@/lib/list-controls/types";
 import type { CourseEntry } from "../types";
 import { DeleteCourseDialog } from "./delete-course-dialog";
 import { CourseMobileList } from "./course-mobile-list";
@@ -23,9 +28,11 @@ type CourseViewProps = {
   onDelete: (entry: CourseEntry) => Promise<void>;
 };
 
-function sortByStartDateDesc(entries: CourseEntry[]) {
-  return [...entries].sort((a, b) => b.startDate.localeCompare(a.startDate));
-}
+const COURSE_SORTS: SortOption<CourseEntry>[] = [
+  { key: "recent", label: "Newest start", compare: (a, b) => b.startDate.localeCompare(a.startDate) },
+  { key: "oldest", label: "Oldest start", compare: (a, b) => a.startDate.localeCompare(b.startDate) },
+  { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
+];
 
 function CourseSkeleton() {
   return (
@@ -50,6 +57,13 @@ export function CourseView({
   const searchParams = useSearchParams();
   const [entryToDelete, setEntryToDelete] = useState<CourseEntry | null>(null);
 
+  const controls = useListControls<CourseEntry>({
+    items: entries,
+    basePath: "/courses",
+    searchAccessor: (entry) => `${entry.title} ${entry.institutionName}`,
+    sorts: COURSE_SORTS,
+  });
+
   useEffect(() => {
     const created = searchParams.get("created") === "1";
     const updated = searchParams.get("updated") === "1";
@@ -68,8 +82,6 @@ export function CourseView({
       <ErrorState title="Courses unavailable" description={error.message} onRetry={onRetry} />
     );
   }
-
-  const sorted = sortByStartDateDesc(entries);
 
   return (
     <div className="space-y-6">
@@ -102,11 +114,48 @@ export function CourseView({
         />
       ) : (
         <>
-          <CourseTable entries={sorted} onDelete={setEntryToDelete} />
-          <CourseMobileList entries={sorted} onDelete={setEntryToDelete} />
-          <p className="text-sm text-muted-foreground">
-            {entries.length} {entries.length === 1 ? "entry" : "entries"}
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={controls.query}
+              onChange={controls.setQuery}
+              placeholder="Search courses..."
+            />
+            <SortSelect
+              value={controls.sortKey}
+              options={COURSE_SORTS}
+              onValueChange={controls.setSortKey}
+            />
+          </div>
+          {controls.totalFiltered === 0 ? (
+            <EmptyState
+              title="No matching courses"
+              description="Adjust or clear the search to see more courses."
+              action={
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                  onClick={controls.reset}
+                >
+                  Clear search
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <CourseTable entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <CourseMobileList entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
+                </p>
+                <Pagination
+                  page={controls.page}
+                  pageCount={controls.pageCount}
+                  onPageChange={controls.goToPage}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
