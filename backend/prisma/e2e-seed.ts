@@ -98,7 +98,22 @@ async function main() {
     },
   });
   await prisma.f_projects.deleteMany({ where: { f_userId: verified.id } });
+  await prisma.f_experience.deleteMany({ where: { f_userId: verified.id } });
+  await prisma.f_education.deleteMany({ where: { f_userId: verified.id } });
+  await prisma.f_courses.deleteMany({ where: { f_userId: verified.id } });
+  // custom_section_item rows cascade when their section is removed.
+  await prisma.custom_section.deleteMany({ where: { user_id: verified.id } });
   await prisma.f_images.deleteMany({ where: { f_userId: verified.id } });
+  // Throwaway lookups created by e2e specs (E2E-prefixed) — never the seeded
+  // globals. Cleared here so lookup specs stay deterministic across runs.
+  // The API lowercases lookup names on save, so match case-insensitively;
+  // technologies aren't user-deletable, so the seed is their only cleanup.
+  await prisma.d_category.deleteMany({
+    where: { category: { startsWith: 'e2e ', mode: 'insensitive' } },
+  });
+  await prisma.d_technologies.deleteMany({
+    where: { tech: { startsWith: 'e2e ', mode: 'insensitive' } },
+  });
   await rm(join(process.cwd(), 'uploads', String(verified.id)), {
     recursive: true,
     force: true,
