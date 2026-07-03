@@ -9,7 +9,12 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortSelect } from "@/components/ui/sort-select";
+import { useListControls } from "@/lib/list-controls/use-list-controls";
+import type { SortOption } from "@/lib/list-controls/types";
 import type { ExperienceEntry } from "../types";
 import { DeleteExperienceDialog } from "./delete-experience-dialog";
 import { ExperienceMobileList } from "./experience-mobile-list";
@@ -23,9 +28,11 @@ type ExperienceViewProps = {
   onDelete: (entry: ExperienceEntry) => Promise<void>;
 };
 
-function sortByStartDateDesc(entries: ExperienceEntry[]) {
-  return [...entries].sort((a, b) => b.startDate.localeCompare(a.startDate));
-}
+const EXPERIENCE_SORTS: SortOption<ExperienceEntry>[] = [
+  { key: "recent", label: "Newest start", compare: (a, b) => b.startDate.localeCompare(a.startDate) },
+  { key: "oldest", label: "Oldest start", compare: (a, b) => a.startDate.localeCompare(b.startDate) },
+  { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
+];
 
 function ExperienceSkeleton() {
   return (
@@ -50,6 +57,13 @@ export function ExperienceView({
   const searchParams = useSearchParams();
   const [entryToDelete, setEntryToDelete] = useState<ExperienceEntry | null>(null);
 
+  const controls = useListControls<ExperienceEntry>({
+    items: entries,
+    basePath: "/experience",
+    searchAccessor: (entry) => `${entry.title} ${entry.companyName}`,
+    sorts: EXPERIENCE_SORTS,
+  });
+
   useEffect(() => {
     const created = searchParams.get("created") === "1";
     const updated = searchParams.get("updated") === "1";
@@ -72,8 +86,6 @@ export function ExperienceView({
       />
     );
   }
-
-  const sorted = sortByStartDateDesc(entries);
 
   return (
     <div className="space-y-6">
@@ -106,11 +118,48 @@ export function ExperienceView({
         />
       ) : (
         <>
-          <ExperienceTable entries={sorted} onDelete={setEntryToDelete} />
-          <ExperienceMobileList entries={sorted} onDelete={setEntryToDelete} />
-          <p className="text-sm text-muted-foreground">
-            {entries.length} {entries.length === 1 ? "entry" : "entries"}
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={controls.query}
+              onChange={controls.setQuery}
+              placeholder="Search experience..."
+            />
+            <SortSelect
+              value={controls.sortKey}
+              options={EXPERIENCE_SORTS}
+              onValueChange={controls.setSortKey}
+            />
+          </div>
+          {controls.totalFiltered === 0 ? (
+            <EmptyState
+              title="No matching experience"
+              description="Adjust or clear the search to see more entries."
+              action={
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                  onClick={controls.reset}
+                >
+                  Clear search
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <ExperienceTable entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <ExperienceMobileList entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
+                </p>
+                <Pagination
+                  page={controls.page}
+                  pageCount={controls.pageCount}
+                  onPageChange={controls.goToPage}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 

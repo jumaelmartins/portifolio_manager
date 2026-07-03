@@ -1,0 +1,83 @@
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { replace, toast, useRouter, useSearchParams } = vi.hoisted(() => ({
+  replace: vi.fn(),
+  toast: { success: vi.fn(), error: vi.fn() },
+  useRouter: vi.fn(),
+  useSearchParams: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
+vi.mock("sonner", () => ({ toast }));
+
+import type { ExperienceEntry } from "../types";
+import { ExperienceView } from "./experience-view";
+
+const entries: ExperienceEntry[] = Array.from({ length: 12 }, (_, index) => {
+  const label = String(index + 1).padStart(2, "0");
+  return {
+    id: index + 1,
+    title: `Role ${label}`,
+    companyName: `Company ${label}`,
+    description: "desc",
+    startDate: `${2013 + index}-01-01`,
+    endDate: null,
+    current: false,
+    createdAt: "2026-06-01T00:00:00.000Z",
+    updatedAt: "2026-06-01T00:00:00.000Z",
+  };
+});
+
+describe("ExperienceView", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useRouter.mockReturnValue({ replace });
+    useSearchParams.mockReturnValue(new URLSearchParams());
+  });
+
+  it("paginates entries and moves to page 2", async () => {
+    const user = userEvent.setup();
+    render(
+      <ExperienceView
+        entries={entries}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Showing 1–10 of 12")).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("Role 12")).toBeInTheDocument(); // newest start
+    expect(within(table).queryByText("Role 01")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Page 2" }));
+    expect(replace).toHaveBeenLastCalledWith("/experience?page=2", {
+      scroll: false,
+    });
+    expect(screen.getByText("Showing 11–12 of 12")).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("Role 01")).toBeInTheDocument();
+  });
+
+  it("searches entries and writes ?q=", async () => {
+    const user = userEvent.setup();
+    render(
+      <ExperienceView
+        entries={entries}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    await user.type(screen.getByRole("searchbox"), "Role 05");
+    expect(screen.getByText("Showing 1–1 of 1")).toBeInTheDocument();
+    expect(replace).toHaveBeenLastCalledWith("/experience?q=Role+05", {
+      scroll: false,
+    });
+  });
+});
