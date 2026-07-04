@@ -1,6 +1,6 @@
 # Portfolio Manager — Roadmap
 
-> Atualizado em 2026-07-02
+> Atualizado em 2026-07-04
 
 ## Legenda
 - ✅ Concluído
@@ -78,7 +78,7 @@
 |---|---|
 | Admin: gestão de Categories e Technologies (CRUD) | ✅ |
 | Reordenação de itens (drag-and-drop) | ⬜ |
-| Paginação e filtros avançados | ⬜ |
+| Paginação e filtros avançados | ✅ |
 | Testes E2E frontend (Playwright) para fluxos de conteúdo | ✅ |
 | Soft-delete / arquivamento de itens | ⬜ |
 
@@ -87,6 +87,16 @@
 > os dois lookups globais. Categories tem CRUD completo para qualquer usuário
 > ativo; Technologies permite create/edit a qualquer ativo mas o delete é
 > admin-only (role-gated no frontend via sessão). Nav items reabilitados.
+
+> **Paginação e filtros avançados** entregues em 2026-07-04 (merge em `master`,
+> commit `1ad8aca`): client-side em todas as 7 listas do dashboard (projects,
+> experience, education, courses, categories, technologies, custom-sections).
+> Hook único `useListControls<T>` é o único escritor da query-string (`q`,
+> `sort`, `page`; Projects também `category`/`technology`; cada um omitido no
+> default). Três primitivas de UI compartilhadas: SearchInput (busca textual
+> uniforme), SortSelect (base-ui) e Pagination numerada (page size 10). Deriva
+> items→search→predicate(Projects)→sort→paginate; estado 100% deep-linkable.
+> Frontend-only exceto o seed e2e de education. 329 testes unit verdes.
 
 > **Testes E2E de conteúdo (Playwright)** entregues em 2026-07-02 (branch
 > `feat/e2e-content-flows`, commit `8b042df`): specs create → edit → delete para
@@ -101,5 +111,4 @@
 ## Próximo passo
 
 **Fase 5 (continuação)** — itens restantes, cada um independente: reordenação
-de itens (drag-and-drop); paginação e filtros avançados; soft-delete /
-arquivamento de itens.
+de itens (drag-and-drop); soft-delete / arquivamento de itens.
