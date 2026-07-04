@@ -10,5 +10,11 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["./src/test/setup.ts"],
     css: true,
+    // base-ui Select popups (alignItemWithTrigger) run layout-measurement loops
+    // that are slow under jsdom, especially with several options and under
+    // parallel load. The default 5s testTimeout tips these interaction tests
+    // into spurious "Test timed out" failures. 20s gives headroom without
+    // weakening any assertion.
+    testTimeout: 20000,
   },
 });
