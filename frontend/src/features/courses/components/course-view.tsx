@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -15,7 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
+import { SortableList } from "@/components/ui/sortable-list";
+import { cn } from "@/lib/utils";
 import type { CourseEntry } from "../types";
+import { useReorderCourses } from "../api/course-queries";
 import { DeleteCourseDialog } from "./delete-course-dialog";
 import { CourseMobileList } from "./course-mobile-list";
 import { CourseTable } from "./course-table";
@@ -32,6 +35,7 @@ const COURSE_SORTS: SortOption<CourseEntry>[] = [
   { key: "recent", label: "Newest start", compare: (a, b) => b.startDate.localeCompare(a.startDate) },
   { key: "oldest", label: "Oldest start", compare: (a, b) => a.startDate.localeCompare(b.startDate) },
   { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
+  { key: "order", label: "Manual order", compare: (a, b) => a.order - b.order },
 ];
 
 function CourseSkeleton() {
@@ -63,6 +67,9 @@ export function CourseView({
     searchAccessor: (entry) => `${entry.title} ${entry.institutionName}`,
     sorts: COURSE_SORTS,
   });
+
+  const reorder = useReorderCourses();
+  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -115,18 +122,44 @@ export function CourseView({
       ) : (
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <SearchInput
-              value={controls.query}
-              onChange={controls.setQuery}
-              placeholder="Search courses..."
-            />
+            {!isManual && (
+              <SearchInput
+                value={controls.query}
+                onChange={controls.setQuery}
+                placeholder="Search courses..."
+              />
+            )}
             <SortSelect
               value={controls.sortKey}
               options={COURSE_SORTS}
               onValueChange={controls.setSortKey}
             />
           </div>
-          {controls.totalFiltered === 0 ? (
+          {isManual ? (
+            <SortableList
+              items={controls.sortedItems}
+              onReorder={(ids) => reorder.mutate(ids)}
+              getLabel={(entry) => entry.title}
+            >
+              {(entry) => (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{entry.title}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {entry.institutionName}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/courses/${entry.id}/edit`}
+                    aria-label={`Edit ${entry.title}`}
+                    className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                  >
+                    <Pencil />
+                  </Link>
+                </div>
+              )}
+            </SortableList>
+          ) : controls.totalFiltered === 0 ? (
             <EmptyState
               title="No matching courses"
               description="Adjust or clear the search to see more courses."

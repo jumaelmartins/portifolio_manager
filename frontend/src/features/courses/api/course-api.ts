@@ -61,3 +61,10 @@ export function deleteCourse(id: number) {
     method: "DELETE",
   });
 }
+
+export function reorderCourses(ids: number[]) {
+  return requestJson<CourseEntry[]>("/api/courses/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });
+}

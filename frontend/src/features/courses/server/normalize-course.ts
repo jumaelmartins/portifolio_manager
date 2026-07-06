@@ -16,6 +16,7 @@ export function normalizeCourse(c: BackendCourse): CourseEntry {
     current: c.current,
     createdAt: c.created_at,
     updatedAt: c.updated_at,
+    order: c.order,
   };
 }
 

@@ -6,14 +6,17 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import type { CourseInput } from "../types";
+import type { CourseEntry, CourseInput } from "../types";
 import {
   createCourse,
   deleteCourse,
   getCourse,
   getCourses,
+  reorderCourses,
   updateCourse,
 } from "./course-api";
+import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
+import { useReorder } from "@/lib/reorder/use-reorder";
 
 export const courseKeys = {
   all: ["courses"] as const,
@@ -79,5 +82,13 @@ export function useDeleteCourse() {
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
       ]);
     },
+  });
+}
+
+export function useReorderCourses() {
+  return useReorder<CourseEntry[]>({
+    queryKey: courseKeys.all,
+    mutationFn: reorderCourses,
+    applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
 }
