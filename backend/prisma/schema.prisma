@@ -129,6 +129,7 @@ model f_experience {
   start_date   DateTime
   end_date     DateTime?
   current      Boolean  @default(false)
+  order        Int      @default(0)
   f_user       f_user   @relation(fields: [f_userId], references: [id])
   f_userId     Int
   created_at   DateTime @default(now())
@@ -143,6 +144,7 @@ model f_education {
   start_date       DateTime
   end_date         DateTime?
   current          Boolean   @default(false)
+  order            Int       @default(0)
   f_user           f_user    @relation(fields: [f_userId], references: [id])
   f_userId         Int
   created_at       DateTime  @default(now())
@@ -157,6 +159,7 @@ model f_courses {
   start_date       DateTime
   end_date         DateTime?
   current          Boolean   @default(false)
+  order            Int       @default(0)
   f_user           f_user    @relation(fields: [f_userId], references: [id])
   f_userId         Int
   created_at       DateTime  @default(now())
@@ -169,6 +172,7 @@ model f_projects {
   description  String
   repo_url     String?
   live_url     String?
+  order        Int              @default(0)
   f_user       f_user           @relation(fields: [f_userId], references: [id])
   f_userId     Int
   category     d_category       @relation(fields: [d_categoryId], references: [id])
