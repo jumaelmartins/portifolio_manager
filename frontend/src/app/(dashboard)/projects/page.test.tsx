@@ -5,11 +5,13 @@ const {
   useCategories,
   useDeleteProject,
   useProjects,
+  useReorderProjects,
   useTechnologies,
 } = vi.hoisted(() => ({
   useCategories: vi.fn(),
   useDeleteProject: vi.fn(),
   useProjects: vi.fn(),
+  useReorderProjects: vi.fn(),
   useTechnologies: vi.fn(),
 }));
 
@@ -17,6 +19,7 @@ vi.mock("@/features/projects/api/project-queries", () => ({
   useCategories,
   useDeleteProject,
   useProjects,
+  useReorderProjects,
   useTechnologies,
 }));
 vi.mock("next/navigation", () => ({
@@ -47,6 +50,7 @@ describe("ProjectsPage", () => {
       refetch: vi.fn(),
     });
     useDeleteProject.mockReturnValue({ mutateAsync: vi.fn() });
+    useReorderProjects.mockReturnValue({ mutate: vi.fn() });
 
     render(<ProjectsPage />);
 
