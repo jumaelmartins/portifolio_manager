@@ -20,6 +20,7 @@ export class PublicService {
           },
         },
         f_projects: {
+          orderBy: { order: 'asc' },
           select: {
             id: true,
             title: true,
@@ -34,6 +35,7 @@ export class PublicService {
           },
         },
         f_education: {
+          orderBy: { order: 'asc' },
           select: {
             id: true,
             title: true,
@@ -46,6 +48,7 @@ export class PublicService {
           },
         },
         f_courses: {
+          orderBy: { order: 'asc' },
           select: {
             id: true,
             title: true,
@@ -58,6 +61,7 @@ export class PublicService {
           },
         },
         f_experience: {
+          orderBy: { order: 'asc' },
           select: {
             id: true,
             tile: true,
