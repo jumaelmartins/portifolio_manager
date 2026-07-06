@@ -19,6 +19,7 @@ export type ListControlsConfig<T> = {
 
 export type ListControlsResult<T> = {
   pageItems: T[];
+  sortedItems: T[];
   totalFiltered: number;
   totalAll: number;
   rangeStart: number;

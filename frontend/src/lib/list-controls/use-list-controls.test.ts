@@ -118,4 +118,14 @@ describe("useListControls", () => {
     expect(result.current.totalFiltered).toBe(12);
     expect(replace).toHaveBeenLastCalledWith("/things", { scroll: false });
   });
+
+  it("exposes sortedItems as the full set, ignoring search and pagination", () => {
+    const { result } = setup("q=Item+01&page=2");
+    // search matches 1 row, but sortedItems must still hold all 12
+    expect(result.current.totalFiltered).toBe(1);
+    expect(result.current.sortedItems).toHaveLength(12);
+    // sorted by the active (default "recent" = created desc) sort
+    expect(result.current.sortedItems[0].title).toBe("Item 12");
+    expect(result.current.sortedItems.at(-1)?.title).toBe("Item 01");
+  });
 });

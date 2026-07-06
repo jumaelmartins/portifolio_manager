@@ -123,6 +123,7 @@ export function useListControls<T>(
     return true;
   });
   const sorted = [...filtered].sort(activeSort.compare);
+  const sortedItems = [...items].sort(activeSort.compare);
   const totalFiltered = sorted.length;
   const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
   const page = Math.min(Math.max(1, state.page), pageCount);
@@ -133,6 +134,7 @@ export function useListControls<T>(
 
   return {
     pageItems,
+    sortedItems,
     totalFiltered,
     totalAll: items.length,
     rangeStart,
