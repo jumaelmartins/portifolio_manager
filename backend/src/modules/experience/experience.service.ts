@@ -7,6 +7,7 @@ import { CreateExperienceDto } from './dto/create-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { ExperienceRepository } from './repository/experience.repository';
 import { UserRoles } from '../../utils/types';
+import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
 
 @Injectable()
 export class ExperienceService {
@@ -22,6 +23,13 @@ export class ExperienceService {
   async findAll(userId: number, role: number) {
     const filterUserId = role === UserRoles.SYSADMIN ? undefined : userId;
     return await this.experienceRepository.findAll(filterUserId);
+  }
+
+  async reorder(userId: number, ids: number[]) {
+    const ownedIds = await this.experienceRepository.findIdsByUser(userId);
+    assertExactIdSet(ownedIds, ids);
+    await this.experienceRepository.reorder(ids);
+    return this.experienceRepository.findAll(userId);
   }
 
   async findOne(id: number) {

@@ -26,6 +26,7 @@ export class ExperienceRepository {
   async findAll(userId?: number): Promise<f_experience[]> {
     return await this.prismaService.f_experience.findMany({
       where: userId ? { f_userId: userId } : undefined,
+      orderBy: { order: 'asc' },
     });
   }
 
@@ -45,5 +46,25 @@ export class ExperienceRepository {
 
   async delete(id: number) {
     return await this.prismaService.f_experience.delete({ where: { id } });
+  }
+
+  async findIdsByUser(userId: number): Promise<number[]> {
+    const rows = await this.prismaService.f_experience.findMany({
+      where: { f_userId: userId },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async reorder(ids: number[]): Promise<void> {
+    await this.prismaService.$transaction(
+      ids.map((id, index) =>
+        this.prismaService.f_experience.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 }

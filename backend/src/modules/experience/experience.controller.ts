@@ -15,6 +15,7 @@ import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import type { AuthenticatedRequest } from '../../utils/types';
+import { ReorderDto } from '../../common/dto/reorder.dto';
 
 @UseGuards(JwtAuthGuard, ActiveUserGuard)
 @Controller('experience')
@@ -37,6 +38,11 @@ export class ExperienceController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.experienceService.findOne(+id);
+  }
+
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
+    return this.experienceService.reorder(Number(req.user.sub), dto.ids);
   }
 
   @Patch(':id')
