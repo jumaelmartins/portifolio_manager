@@ -28,7 +28,7 @@ export class CustomSectionsRepository {
   async findSectionById(id: number) {
     return this.prisma.custom_section.findUnique({
       where: { id },
-      include: { items: true },
+      include: { items: { orderBy: { order: 'asc' } } },
     });
   }
 
@@ -95,5 +95,25 @@ export class CustomSectionsRepository {
 
   async deleteItem(id: number) {
     return this.prisma.custom_section_item.delete({ where: { id } });
+  }
+
+  async findItemIdsBySection(sectionId: number): Promise<number[]> {
+    const rows = await this.prisma.custom_section_item.findMany({
+      where: { section_id: sectionId },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async reorderItems(ids: number[]): Promise<void> {
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.custom_section_item.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 }

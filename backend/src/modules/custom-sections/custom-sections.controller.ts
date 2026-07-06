@@ -80,6 +80,20 @@ export class CustomSectionsController {
     );
   }
 
+  @Patch(':sectionId/items/reorder')
+  reorderItems(
+    @Param('sectionId') sectionId: string,
+    @Body() dto: ReorderDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.reorderItems(
+      +sectionId,
+      dto.ids,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
   @Patch('items/:itemId')
   updateItem(
     @Param('itemId') itemId: string,

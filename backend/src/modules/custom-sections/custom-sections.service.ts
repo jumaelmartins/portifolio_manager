@@ -29,6 +29,22 @@ export class CustomSectionsService {
     return this.repository.findSectionsByUser(userId);
   }
 
+  async reorderItems(
+    sectionId: number,
+    ids: number[],
+    userId: number,
+    role: number,
+  ) {
+    const section = await this.findSectionById(sectionId);
+    if (section.user_id !== userId && role !== UserRoles.SYSADMIN) {
+      throw new ForbiddenException('Acesso negado');
+    }
+    const ownedIds = await this.repository.findItemIdsBySection(sectionId);
+    assertExactIdSet(ownedIds, ids);
+    await this.repository.reorderItems(ids);
+    return this.findSectionById(sectionId);
+  }
+
   async findSectionById(id: number) {
     const section = await this.repository.findSectionById(id);
     if (!section) throw new NotFoundException('Section not found');
