@@ -26,6 +26,7 @@ export class EducationRepository {
   async findAll(userId?: number): Promise<f_education[]> {
     return await this.prismaService.f_education.findMany({
       where: userId ? { f_userId: userId } : undefined,
+      orderBy: { order: 'asc' },
     });
   }
 
@@ -42,5 +43,25 @@ export class EducationRepository {
 
   async delete(id: number) {
     return await this.prismaService.f_education.delete({ where: { id } });
+  }
+
+  async findIdsByUser(userId: number): Promise<number[]> {
+    const rows = await this.prismaService.f_education.findMany({
+      where: { f_userId: userId },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async reorder(ids: number[]): Promise<void> {
+    await this.prismaService.$transaction(
+      ids.map((id, index) =>
+        this.prismaService.f_education.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 }

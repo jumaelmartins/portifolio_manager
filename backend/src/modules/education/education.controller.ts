@@ -15,6 +15,7 @@ import { UpdateEducationDto } from './dto/update-education.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import type { AuthenticatedRequest } from '../../utils/types';
+import { ReorderDto } from '../../common/dto/reorder.dto';
 
 @UseGuards(JwtAuthGuard, ActiveUserGuard)
 @Controller('education')
@@ -37,6 +38,11 @@ export class EducationController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.educationService.findOne(+id);
+  }
+
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
+    return this.educationService.reorder(Number(req.user.sub), dto.ids);
   }
 
   @Patch(':id')

@@ -7,6 +7,7 @@ import { CreateEducationDto } from './dto/create-education.dto';
 import { UpdateEducationDto } from './dto/update-education.dto';
 import { EducationRepository } from './repository/education.repository';
 import { UserRoles } from '../../utils/types';
+import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
 
 @Injectable()
 export class EducationService {
@@ -19,6 +20,13 @@ export class EducationService {
   async findAll(userId: number, role: number) {
     const filterUserId = role === UserRoles.SYSADMIN ? undefined : userId;
     return await this.educationRepository.findAll(filterUserId);
+  }
+
+  async reorder(userId: number, ids: number[]) {
+    const ownedIds = await this.educationRepository.findIdsByUser(userId);
+    assertExactIdSet(ownedIds, ids);
+    await this.educationRepository.reorder(ids);
+    return this.educationRepository.findAll(userId);
   }
 
   async findOne(id: number) {
