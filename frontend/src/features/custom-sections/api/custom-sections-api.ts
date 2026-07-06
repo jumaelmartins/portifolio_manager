@@ -66,3 +66,10 @@ export async function updateItem(itemId: number, input: CustomItemInput): Promis
 export async function deleteItem(itemId: number): Promise<void> {
   await requestJson(`/api/custom-sections/items/${itemId}`, { method: "DELETE" });
 }
+
+export function reorderSections(ids: number[]) {
+  return requestJson<CustomSection[]>("/api/custom-sections/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });
+}

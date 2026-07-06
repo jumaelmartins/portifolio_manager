@@ -2,13 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { CustomItemInput, CustomSectionInput } from "../types";
+import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
+import { useReorder } from "@/lib/reorder/use-reorder";
+import type { CustomItemInput, CustomSection, CustomSectionInput } from "../types";
 import {
   createItem,
   createSection,
   deleteItem,
   deleteSection,
   fetchSections,
+  reorderSections,
   updateItem,
   updateSection,
 } from "./custom-sections-api";
@@ -93,5 +96,13 @@ export function useDeleteItem() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: customSectionKeys.all });
     },
+  });
+}
+
+export function useReorderSections() {
+  return useReorder<CustomSection[]>({
+    queryKey: customSectionKeys.all,
+    mutationFn: reorderSections,
+    applyOptimistic: (sections, ids) => reorderByIds(sections, ids),
   });
 }

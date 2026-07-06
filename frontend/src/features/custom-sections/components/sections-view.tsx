@@ -14,9 +14,10 @@ import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
+import { SortableList } from "@/components/ui/sortable-list";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
-import { useDeleteSection, useSections } from "../api/custom-sections-queries";
+import { useDeleteSection, useReorderSections, useSections } from "../api/custom-sections-queries";
 import type { CustomSection } from "../types";
 import { DeleteSectionDialog } from "./delete-section-dialog";
 import { ItemsDrawer } from "./items-drawer";
@@ -47,6 +48,9 @@ export function SectionsView() {
     searchAccessor: (section) => `${section.name} ${section.description ?? ""}`,
     sorts: SECTION_SORTS,
   });
+
+  const reorder = useReorderSections();
+  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -117,18 +121,35 @@ export function SectionsView() {
       ) : (
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <SearchInput
-              value={controls.query}
-              onChange={controls.setQuery}
-              placeholder="Search sections..."
-            />
+            {!isManual && (
+              <SearchInput
+                value={controls.query}
+                onChange={controls.setQuery}
+                placeholder="Search sections..."
+              />
+            )}
             <SortSelect
               value={controls.sortKey}
               options={SECTION_SORTS}
               onValueChange={controls.setSortKey}
             />
           </div>
-          {controls.totalFiltered === 0 ? (
+          {isManual ? (
+            <SortableList
+              items={controls.sortedItems}
+              onReorder={(ids) => reorder.mutate(ids)}
+              getLabel={(section) => section.name}
+              itemClassName="border-0 bg-transparent p-0"
+            >
+              {(section) => (
+                <SectionCard
+                  section={section}
+                  onManageItems={setActiveSectionId}
+                  onDelete={setSectionToDelete}
+                />
+              )}
+            </SortableList>
+          ) : controls.totalFiltered === 0 ? (
             <EmptyState
               title="No matching sections"
               description="Adjust or clear the search to see more sections."
