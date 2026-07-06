@@ -13,6 +13,7 @@ import { CustomSectionsService } from './custom-sections.service';
 import { CreateCustomSectionDto } from './dto/create-section.dto';
 import { CreateCustomItemDto } from './dto/create-item.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ReorderDto } from '../../common/dto/reorder.dto';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import type { AuthenticatedRequest } from '../../utils/types';
 
@@ -32,6 +33,14 @@ export class CustomSectionsController {
   @Get()
   findUserSections(@Req() req: AuthenticatedRequest) {
     return this.service.findUserSections(Number(req.user.sub));
+  }
+
+  @Patch('reorder')
+  reorderSections(
+    @Body() dto: ReorderDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.reorderSections(Number(req.user.sub), dto.ids);
   }
 
   @Patch(':id')

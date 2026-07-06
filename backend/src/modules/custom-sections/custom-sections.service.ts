@@ -8,6 +8,7 @@ import { CustomSectionsRepository } from './repository/custom-sections.repositor
 import { CreateCustomSectionDto } from './dto/create-section.dto';
 import { CreateCustomItemDto } from './dto/create-item.dto';
 import { UserRoles } from '../../utils/types';
+import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
 
 @Injectable()
 export class CustomSectionsService {
@@ -18,6 +19,13 @@ export class CustomSectionsService {
   }
 
   async findUserSections(userId: number) {
+    return this.repository.findSectionsByUser(userId);
+  }
+
+  async reorderSections(userId: number, ids: number[]) {
+    const ownedIds = await this.repository.findSectionIdsByUser(userId);
+    assertExactIdSet(ownedIds, ids);
+    await this.repository.reorderSections(ids);
     return this.repository.findSectionsByUser(userId);
   }
 

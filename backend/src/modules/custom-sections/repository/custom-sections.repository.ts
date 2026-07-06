@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import { CreateCustomSectionDto } from '../dto/create-section.dto';
 import { CreateCustomItemDto } from '../dto/create-item.dto';
 
@@ -20,7 +20,7 @@ export class CustomSectionsRepository {
   async findSectionsByUser(userId: number) {
     return this.prisma.custom_section.findMany({
       where: { user_id: userId },
-      include: { items: true },
+      include: { items: { orderBy: { order: 'asc' } } },
       orderBy: { order: 'asc' },
     });
   }
@@ -44,6 +44,26 @@ export class CustomSectionsRepository {
 
   async deleteSection(id: number) {
     return this.prisma.custom_section.delete({ where: { id } });
+  }
+
+  async findSectionIdsByUser(userId: number): Promise<number[]> {
+    const rows = await this.prisma.custom_section.findMany({
+      where: { user_id: userId },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async reorderSections(ids: number[]): Promise<void> {
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.custom_section.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 
   async createItem(sectionId: number, data: CreateCustomItemDto) {
