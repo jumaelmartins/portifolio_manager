@@ -27,6 +27,7 @@ export type Project = {
   coverImage: ImageOption | null;
   createdAt: string;
   updatedAt: string;
+  order: number;
 };
 
 export type ProjectInput = {
@@ -66,6 +67,7 @@ export type BackendProject = {
   f_images: BackendImage | null;
   created_at: string;
   updated_at: string;
+  order: number;
 };
 
 export type BackendProjectInput = {

@@ -27,6 +27,7 @@ describe("normalizeProject", () => {
         },
         created_at: "2026-06-01T00:00:00.000Z",
         updated_at: "2026-06-12T00:00:00.000Z",
+        order: 2,
       }),
     ).toEqual({
       id: 1,
@@ -45,6 +46,7 @@ describe("normalizeProject", () => {
       },
       createdAt: "2026-06-01T00:00:00.000Z",
       updatedAt: "2026-06-12T00:00:00.000Z",
+      order: 2,
     });
   });
 });

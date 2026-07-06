@@ -44,6 +44,7 @@ export function normalizeProject(project: BackendProject): Project {
     coverImage: project.f_images ? normalizeImage(project.f_images) : null,
     createdAt: project.created_at,
     updatedAt: project.updated_at,
+    order: project.order,
   };
 }
 

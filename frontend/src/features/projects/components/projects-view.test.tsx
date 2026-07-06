@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +19,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("sonner", () => ({ toast }));
 
 import type { Project } from "../types";
+import { renderWithProviders } from "@/test/render-with-providers";
 import { ProjectsView } from "./projects-view";
 
 const projects: Project[] = [
@@ -36,6 +37,7 @@ const projects: Project[] = [
     coverImage: null,
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt: "2026-06-12T00:00:00.000Z",
+    order: 0,
   },
   {
     id: 2,
@@ -48,6 +50,7 @@ const projects: Project[] = [
     coverImage: null,
     createdAt: "2026-06-02T00:00:00.000Z",
     updatedAt: "2026-06-11T00:00:00.000Z",
+    order: 1,
   },
 ];
 
@@ -61,7 +64,7 @@ describe("ProjectsView", () => {
   it("filters projects and stores valid filters in the URL", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <ProjectsView
         projects={projects}
         categories={[
@@ -110,7 +113,7 @@ describe("ProjectsView", () => {
   it("sorts projects and stores the sort key in the URL", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <ProjectsView
         projects={projects}
         categories={[]}
@@ -137,7 +140,7 @@ describe("ProjectsView", () => {
   });
 
   it("shows loading, error, and empty portfolio states", () => {
-    const { rerender } = render(
+    const { rerender } = renderWithProviders(
       <ProjectsView
         projects={[]}
         categories={[]}
@@ -190,7 +193,7 @@ describe("ProjectsView", () => {
   it("shows one-time create feedback and cleans the URL", async () => {
     useSearchParams.mockReturnValue(new URLSearchParams("created=1"));
 
-    render(
+    renderWithProviders(
       <ProjectsView
         projects={[]}
         categories={[]}
@@ -214,7 +217,7 @@ describe("ProjectsView", () => {
     const user = userEvent.setup();
     const onDelete = vi.fn().mockResolvedValue(undefined);
 
-    render(
+    renderWithProviders(
       <ProjectsView
         projects={projects}
         categories={[]}
@@ -251,7 +254,7 @@ describe("ProjectsView", () => {
       message: "Project could not be deleted",
     });
 
-    render(
+    renderWithProviders(
       <ProjectsView
         projects={projects}
         categories={[]}
@@ -279,5 +282,43 @@ describe("ProjectsView", () => {
     expect(toast.error).toHaveBeenCalledWith(
       "Project could not be deleted",
     );
+  });
+
+  it("under manual order: hides search and pagination, shows one Reorder button per project", () => {
+    useSearchParams.mockReturnValue(new URLSearchParams("sort=order"));
+
+    renderWithProviders(
+      <ProjectsView
+        projects={projects}
+        categories={[]}
+        technologies={[]}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
+    const reorderButtons = screen.getAllByRole("button", { name: /^Reorder / });
+    expect(reorderButtons).toHaveLength(projects.length);
+  });
+
+  it("under default sort: shows search input and no Reorder buttons", () => {
+    renderWithProviders(
+      <ProjectsView
+        projects={projects}
+        categories={[]}
+        technologies={[]}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("searchbox")).toBeInTheDocument();
+    expect(screen.queryAllByRole("button", { name: /^Reorder / })).toHaveLength(0);
   });
 });

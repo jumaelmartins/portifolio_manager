@@ -73,6 +73,13 @@ export function deleteProject(id: number) {
   });
 }
 
+export function reorderProjects(ids: number[]) {
+  return requestJson<Project[]>("/api/projects/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export function getCategories() {
   return requestJson<CategoryOption[]>("/api/categories");
 }

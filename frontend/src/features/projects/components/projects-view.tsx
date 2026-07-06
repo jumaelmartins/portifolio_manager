@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderPlus, Plus } from "lucide-react";
+import { FolderPlus, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -13,9 +13,12 @@ import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
+import { SortableList } from "@/components/ui/sortable-list";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
+import { cn } from "@/lib/utils";
 import type { CategoryOption, Project, TechnologyOption } from "../types";
+import { useReorderProjects } from "../api/project-queries";
 import { DeleteProjectDialog } from "./delete-project-dialog";
 import { ProjectFilters } from "./project-filters";
 import { ProjectMobileList } from "./project-mobile-list";
@@ -37,6 +40,7 @@ const PROJECT_SORTS: SortOption<Project>[] = [
   { key: "oldest", label: "Oldest", compare: (a, b) => a.createdAt.localeCompare(b.createdAt) },
   { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
   { key: "title-desc", label: "Title Z–A", compare: (a, b) => b.title.localeCompare(a.title) },
+  { key: "order", label: "Manual order", compare: (a, b) => a.order - b.order },
 ];
 
 function positiveOption(value: string | null, options: Array<{ id: number }>) {
@@ -97,6 +101,8 @@ export function ProjectsView({
       return matchesCategory && matchesTechnology;
     },
   });
+  const reorder = useReorderProjects();
+  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -174,32 +180,60 @@ export function ProjectsView({
         <>
           <ProjectSummary projects={projects} />
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <SearchInput
-              value={controls.query}
-              onChange={controls.setQuery}
-              placeholder="Search projects..."
-            />
+            {!isManual && (
+              <SearchInput
+                value={controls.query}
+                onChange={controls.setQuery}
+                placeholder="Search projects..."
+              />
+            )}
             <SortSelect
               value={controls.sortKey}
               options={PROJECT_SORTS}
               onValueChange={controls.setSortKey}
             />
-            <ProjectFilters
-              categoryId={selectedCategory}
-              technologyId={selectedTechnology}
-              categories={categories}
-              technologies={technologies}
-              onCategoryChange={(id) =>
-                controls.setParam("category", id === null ? null : String(id))
-              }
-              onTechnologyChange={(id) =>
-                controls.setParam("technology", id === null ? null : String(id))
-              }
-              onClear={controls.reset}
-              showClear={hasActiveFilters}
-            />
+            {!isManual && (
+              <ProjectFilters
+                categoryId={selectedCategory}
+                technologyId={selectedTechnology}
+                categories={categories}
+                technologies={technologies}
+                onCategoryChange={(id) =>
+                  controls.setParam("category", id === null ? null : String(id))
+                }
+                onTechnologyChange={(id) =>
+                  controls.setParam("technology", id === null ? null : String(id))
+                }
+                onClear={controls.reset}
+                showClear={hasActiveFilters}
+              />
+            )}
           </div>
-          {controls.totalFiltered === 0 ? (
+          {isManual ? (
+            <SortableList
+              items={controls.sortedItems}
+              onReorder={(ids) => reorder.mutate(ids)}
+              getLabel={(project) => project.title}
+            >
+              {(project) => (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{project.title}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {project.category.name}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/projects/${project.id}/edit`}
+                    aria-label={`Edit ${project.title}`}
+                    className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                  >
+                    <Pencil />
+                  </Link>
+                </div>
+              )}
+            </SortableList>
+          ) : controls.totalFiltered === 0 ? (
             <EmptyState
               title="No matching projects"
               description="Adjust or clear the filters to see more projects."

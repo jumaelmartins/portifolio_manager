@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import type { ProjectInput } from "../types";
+import type { Project, ProjectInput } from "../types";
 import {
   createProject,
   deleteImage,
@@ -16,9 +16,12 @@ import {
   getProject,
   getProjects,
   getTechnologies,
+  reorderProjects,
   updateProject,
   uploadImage,
 } from "./project-api";
+import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
+import { useReorder } from "@/lib/reorder/use-reorder";
 
 export const projectKeys = {
   all: ["projects"] as const,
@@ -133,5 +136,13 @@ export function useDeleteImage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: projectKeys.images });
     },
+  });
+}
+
+export function useReorderProjects() {
+  return useReorder<Project[]>({
+    queryKey: projectKeys.all,
+    mutationFn: reorderProjects,
+    applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
 }
