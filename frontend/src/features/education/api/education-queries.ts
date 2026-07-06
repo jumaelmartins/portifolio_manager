@@ -6,12 +6,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import type { EducationInput } from "../types";
+import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
+import { useReorder } from "@/lib/reorder/use-reorder";
+import type { EducationEntry, EducationInput } from "../types";
 import {
   createEducation,
   deleteEducation,
   getEducation,
   getEducations,
+  reorderEducations,
   updateEducation,
 } from "./education-api";
 
@@ -79,5 +82,13 @@ export function useDeleteEducation() {
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
       ]);
     },
+  });
+}
+
+export function useReorderEducations() {
+  return useReorder<EducationEntry[]>({
+    queryKey: educationKeys.all,
+    mutationFn: reorderEducations,
+    applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
 }

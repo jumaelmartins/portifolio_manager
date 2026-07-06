@@ -11,6 +11,7 @@ const backendEntry = {
   current: false,
   created_at: "2018-09-01T00:00:00.000Z",
   updated_at: "2022-06-30T00:00:00.000Z",
+  order: 3,
 };
 
 describe("normalizeEducation", () => {
@@ -25,6 +26,7 @@ describe("normalizeEducation", () => {
       current: false,
       createdAt: "2018-09-01T00:00:00.000Z",
       updatedAt: "2022-06-30T00:00:00.000Z",
+      order: 3,
     });
   });
 });

@@ -8,6 +8,7 @@ export type EducationEntry = {
   current: boolean;
   createdAt: string;
   updatedAt: string;
+  order: number;
 };
 
 export type EducationInput = {
@@ -29,6 +30,7 @@ export type BackendEducation = {
   current: boolean;
   created_at: string;
   updated_at: string;
+  order: number;
 };
 
 export type BackendEducationInput = {

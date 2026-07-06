@@ -16,6 +16,7 @@ export function normalizeEducation(e: BackendEducation): EducationEntry {
     current: e.current,
     createdAt: e.created_at,
     updatedAt: e.updated_at,
+    order: e.order,
   };
 }
 

@@ -61,3 +61,10 @@ export function deleteEducation(id: number) {
     method: "DELETE",
   });
 }
+
+export function reorderEducations(ids: number[]) {
+  return requestJson<EducationEntry[]>("/api/education/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });
+}

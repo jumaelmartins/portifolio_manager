@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { replace, toast, useRouter, useSearchParams } = vi.hoisted(() => ({
@@ -27,8 +29,25 @@ const entries: EducationEntry[] = Array.from({ length: 12 }, (_, index) => {
     current: false,
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt: "2026-06-01T00:00:00.000Z",
+    order: index,
   };
 });
+
+function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
+
+function renderView(ui: ReactElement) {
+  const queryClient = makeQueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
+}
 
 describe("EducationView", () => {
   beforeEach(() => {
@@ -39,7 +58,7 @@ describe("EducationView", () => {
 
   it("paginates entries and moves to page 2", async () => {
     const user = userEvent.setup();
-    render(
+    renderView(
       <EducationView
         entries={entries}
         isPending={false}
@@ -64,7 +83,7 @@ describe("EducationView", () => {
 
   it("sorts by oldest start and writes ?sort=oldest", async () => {
     const user = userEvent.setup();
-    render(
+    renderView(
       <EducationView
         entries={entries}
         isPending={false}
@@ -82,5 +101,41 @@ describe("EducationView", () => {
     expect(
       within(screen.getByRole("table")).getByText("Degree 01"),
     ).toBeInTheDocument();
+  });
+
+  it("manual order: hides search and pagination, shows a reorder handle per entry", async () => {
+    const user = userEvent.setup();
+    renderView(
+      <EducationView
+        entries={entries}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(screen.getByRole("option", { name: "Manual order" }));
+
+    expect(screen.queryByPlaceholderText("Search education...")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
+    const reorderButtons = screen.getAllByRole("button", { name: /^Reorder / });
+    expect(reorderButtons).toHaveLength(entries.length);
+  });
+
+  it("normal mode: shows search input and no reorder handles", () => {
+    renderView(
+      <EducationView
+        entries={entries}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByPlaceholderText("Search education...")).toBeInTheDocument();
+    expect(screen.queryAllByRole("button", { name: /^Reorder / })).toHaveLength(0);
   });
 });
