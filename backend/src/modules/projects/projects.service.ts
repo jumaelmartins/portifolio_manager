@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma, type f_images } from '@prisma/client';
 import { presentImage } from '../../common/presenters/image.presenter';
+import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectRepository } from './repository/projects.repository';
@@ -38,6 +39,13 @@ export class ProjectsService {
   async findAll(userId: number) {
     const projects = await this.projectRepository.findAll(userId);
     return projects.map((project) => this.presentProject(project));
+  }
+
+  async reorder(userId: number, ids: number[]) {
+    const ownedIds = await this.projectRepository.findIdsByUser(userId);
+    assertExactIdSet(ownedIds, ids);
+    await this.projectRepository.reorder(ids);
+    return this.findAll(userId);
   }
 
   async findOne(id: number, userId: number) {

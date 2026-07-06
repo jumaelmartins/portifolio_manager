@@ -42,6 +42,7 @@ export class ProjectRepository {
     return this.prismaService.f_projects.findMany({
       where: { f_userId: userId },
       include: projectInclude,
+      orderBy: { order: 'asc' },
     });
   }
 
@@ -99,5 +100,25 @@ export class ProjectRepository {
     return this.prismaService.f_images.findUnique({
       where: { id },
     });
+  }
+
+  async findIdsByUser(userId: number): Promise<number[]> {
+    const rows = await this.prismaService.f_projects.findMany({
+      where: { f_userId: userId },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async reorder(ids: number[]): Promise<void> {
+    await this.prismaService.$transaction(
+      ids.map((id, index) =>
+        this.prismaService.f_projects.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 }

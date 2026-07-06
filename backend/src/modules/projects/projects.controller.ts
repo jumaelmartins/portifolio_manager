@@ -13,6 +13,7 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { ReorderDto } from '../../common/dto/reorder.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import type { AuthenticatedRequest } from '../../utils/types';
@@ -41,6 +42,11 @@ export class ProjectsController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.projectsService.findOne(id, Number(req.user.sub));
+  }
+
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
+    return this.projectsService.reorder(Number(req.user.sub), dto.ids);
   }
 
   @Patch(':id')

@@ -86,6 +86,7 @@ describe('ProjectRepository', () => {
     expect(projects.findMany).toHaveBeenCalledWith({
       where: { f_userId: 42 },
       include,
+      orderBy: { order: 'asc' },
     });
     expect(projects.findFirst).toHaveBeenNthCalledWith(1, {
       where: { id: 7, f_userId: 42 },
