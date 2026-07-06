@@ -7,6 +7,7 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CoursesRepository } from './repository/courses.repository';
 import { UserRoles } from '../../utils/types';
+import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
 
 @Injectable()
 export class CoursesService {
@@ -19,6 +20,13 @@ export class CoursesService {
   async findAll(userId: number, role: number) {
     const filterUserId = role === UserRoles.SYSADMIN ? undefined : userId;
     return await this.coursesRepository.findAll(filterUserId);
+  }
+
+  async reorder(userId: number, ids: number[]) {
+    const ownedIds = await this.coursesRepository.findIdsByUser(userId);
+    assertExactIdSet(ownedIds, ids);
+    await this.coursesRepository.reorder(ids);
+    return this.coursesRepository.findAll(userId);
   }
 
   async findOne(id: number) {

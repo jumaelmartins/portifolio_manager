@@ -12,6 +12,7 @@ import {
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { ReorderDto } from '../../common/dto/reorder.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
 import type { AuthenticatedRequest } from '../../utils/types';
@@ -37,6 +38,11 @@ export class CoursesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(+id);
+  }
+
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
+    return this.coursesService.reorder(Number(req.user.sub), dto.ids);
   }
 
   @Patch(':id')
