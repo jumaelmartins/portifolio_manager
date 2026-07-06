@@ -11,6 +11,7 @@ const backendEntry = {
   current: false,
   created_at: "2022-01-01T00:00:00.000Z",
   updated_at: "2024-06-30T00:00:00.000Z",
+  order: 0,
 };
 
 describe("normalizeExperience", () => {
@@ -25,6 +26,7 @@ describe("normalizeExperience", () => {
       current: false,
       createdAt: "2022-01-01T00:00:00.000Z",
       updatedAt: "2024-06-30T00:00:00.000Z",
+      order: 0,
     });
   });
 

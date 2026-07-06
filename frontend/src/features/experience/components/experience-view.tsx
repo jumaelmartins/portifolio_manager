@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Briefcase, Plus } from "lucide-react";
+import { Briefcase, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
+import { SortableList } from "@/components/ui/sortable-list";
+import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -16,6 +18,7 @@ import { SortSelect } from "@/components/ui/sort-select";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
 import type { ExperienceEntry } from "../types";
+import { useReorderExperiences } from "../api/experience-queries";
 import { DeleteExperienceDialog } from "./delete-experience-dialog";
 import { ExperienceMobileList } from "./experience-mobile-list";
 import { ExperienceTable } from "./experience-table";
@@ -32,6 +35,7 @@ const EXPERIENCE_SORTS: SortOption<ExperienceEntry>[] = [
   { key: "recent", label: "Newest start", compare: (a, b) => b.startDate.localeCompare(a.startDate) },
   { key: "oldest", label: "Oldest start", compare: (a, b) => a.startDate.localeCompare(b.startDate) },
   { key: "title-asc", label: "Title A–Z", compare: (a, b) => a.title.localeCompare(b.title) },
+  { key: "order", label: "Manual order", compare: (a, b) => a.order - b.order },
 ];
 
 function ExperienceSkeleton() {
@@ -63,6 +67,9 @@ export function ExperienceView({
     searchAccessor: (entry) => `${entry.title} ${entry.companyName}`,
     sorts: EXPERIENCE_SORTS,
   });
+
+  const reorder = useReorderExperiences();
+  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -119,18 +126,44 @@ export function ExperienceView({
       ) : (
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <SearchInput
-              value={controls.query}
-              onChange={controls.setQuery}
-              placeholder="Search experience..."
-            />
+            {!isManual && (
+              <SearchInput
+                value={controls.query}
+                onChange={controls.setQuery}
+                placeholder="Search experience..."
+              />
+            )}
             <SortSelect
               value={controls.sortKey}
               options={EXPERIENCE_SORTS}
               onValueChange={controls.setSortKey}
             />
           </div>
-          {controls.totalFiltered === 0 ? (
+          {isManual ? (
+            <SortableList
+              items={controls.sortedItems}
+              onReorder={(ids) => reorder.mutate(ids)}
+              getLabel={(entry) => entry.title}
+            >
+              {(entry) => (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{entry.title}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {entry.companyName}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/experience/${entry.id}/edit`}
+                    aria-label={`Edit ${entry.title}`}
+                    className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                  >
+                    <Pencil />
+                  </Link>
+                </div>
+              )}
+            </SortableList>
+          ) : controls.totalFiltered === 0 ? (
             <EmptyState
               title="No matching experience"
               description="Adjust or clear the search to see more entries."

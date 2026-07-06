@@ -16,6 +16,7 @@ export function normalizeExperience(e: BackendExperience): ExperienceEntry {
     current: e.current,
     createdAt: e.created_at,
     updatedAt: e.updated_at,
+    order: e.order,
   };
 }
 

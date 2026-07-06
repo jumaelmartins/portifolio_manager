@@ -6,12 +6,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import type { ExperienceInput } from "../types";
+import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
+import { useReorder } from "@/lib/reorder/use-reorder";
+import type { ExperienceEntry, ExperienceInput } from "../types";
 import {
   createExperience,
   deleteExperience,
   getExperience,
   getExperiences,
+  reorderExperiences,
   updateExperience,
 } from "./experience-api";
 
@@ -79,5 +82,13 @@ export function useDeleteExperience() {
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
       ]);
     },
+  });
+}
+
+export function useReorderExperiences() {
+  return useReorder<ExperienceEntry[]>({
+    queryKey: experienceKeys.all,
+    mutationFn: reorderExperiences,
+    applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
 }

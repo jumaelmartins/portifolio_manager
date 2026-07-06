@@ -8,6 +8,7 @@ export type ExperienceEntry = {
   current: boolean;
   createdAt: string;
   updatedAt: string;
+  order: number;
 };
 
 export type ExperienceInput = {
@@ -29,6 +30,7 @@ export type BackendExperience = {
   current: boolean;
   created_at: string;
   updated_at: string;
+  order: number;
 };
 
 export type BackendExperienceInput = {

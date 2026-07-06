@@ -61,3 +61,10 @@ export function deleteExperience(id: number) {
     method: "DELETE",
   });
 }
+
+export function reorderExperiences(ids: number[]) {
+  return requestJson<ExperienceEntry[]>("/api/experience/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });
+}
