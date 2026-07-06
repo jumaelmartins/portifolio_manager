@@ -73,3 +73,10 @@ export function reorderSections(ids: number[]) {
     body: JSON.stringify({ ids }),
   });
 }
+
+export async function reorderItems(sectionId: number, ids: number[]): Promise<void> {
+  await requestJson(`/api/custom-sections/${sectionId}/items/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });
+}

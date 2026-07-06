@@ -11,6 +11,7 @@ import {
   deleteItem,
   deleteSection,
   fetchSections,
+  reorderItems,
   reorderSections,
   updateItem,
   updateSection,
@@ -104,5 +105,18 @@ export function useReorderSections() {
     queryKey: customSectionKeys.all,
     mutationFn: reorderSections,
     applyOptimistic: (sections, ids) => reorderByIds(sections, ids),
+  });
+}
+
+export function useReorderItems(sectionId: number) {
+  return useReorder<CustomSection[]>({
+    queryKey: customSectionKeys.all,
+    mutationFn: (ids) => reorderItems(sectionId, ids),
+    applyOptimistic: (sections, ids) =>
+      sections.map((section) =>
+        section.id === sectionId
+          ? { ...section, items: reorderByIds(section.items, ids) }
+          : section,
+      ),
   });
 }

@@ -12,7 +12,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useCreateItem, useDeleteItem, useUpdateItem } from "../api/custom-sections-queries";
+import { SortableList } from "@/components/ui/sortable-list";
+import { useCreateItem, useDeleteItem, useReorderItems, useUpdateItem } from "../api/custom-sections-queries";
 import type { CustomItem, CustomSection } from "../types";
 import { DeleteItemDialog } from "./delete-item-dialog";
 import { ItemForm } from "./item-form";
@@ -37,6 +38,7 @@ export function ItemsDrawer({ section, open, onOpenChange }: ItemsDrawerProps) {
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
+  const reorderItems = useReorderItems(section?.id ?? 0);
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) setFormMode(null);
@@ -80,12 +82,13 @@ export function ItemsDrawer({ section, open, onOpenChange }: ItemsDrawerProps) {
                     No items yet. Add the first one.
                   </p>
                 ) : (
-                  <ul className="space-y-2">
-                    {section.items.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex items-start justify-between gap-3 rounded-lg border border-border p-3"
-                      >
+                  <SortableList
+                    items={section.items}
+                    onReorder={(ids) => reorderItems.mutate(ids)}
+                    getLabel={(item) => summarize(section, item)}
+                  >
+                    {(item) => (
+                      <div className="flex items-start justify-between gap-3">
                         <span className="text-sm">{summarize(section, item)}</span>
                         <div className="flex shrink-0 gap-1">
                           <Button
@@ -106,9 +109,9 @@ export function ItemsDrawer({ section, open, onOpenChange }: ItemsDrawerProps) {
                             <Trash2 />
                           </Button>
                         </div>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                    )}
+                  </SortableList>
                 )}
               </>
             )}

@@ -13,6 +13,7 @@ const {
   useCreateItem,
   useUpdateItem,
   useDeleteItem,
+  useReorderItems,
 } = vi.hoisted(() => ({
   replace: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
@@ -24,6 +25,7 @@ const {
   useCreateItem: vi.fn(),
   useUpdateItem: vi.fn(),
   useDeleteItem: vi.fn(),
+  useReorderItems: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
@@ -35,6 +37,7 @@ vi.mock("../api/custom-sections-queries", () => ({
   useCreateItem,
   useUpdateItem,
   useDeleteItem,
+  useReorderItems,
 }));
 
 import type { CustomSection } from "../types";
@@ -69,6 +72,7 @@ describe("SectionsView", () => {
     useCreateItem.mockReturnValue({ mutateAsync: vi.fn() });
     useUpdateItem.mockReturnValue({ mutateAsync: vi.fn() });
     useDeleteItem.mockReturnValue({ mutateAsync: vi.fn() });
+    useReorderItems.mockReturnValue({ mutate: vi.fn() });
   });
 
   it("paginates sections and moves to page 2", async () => {
