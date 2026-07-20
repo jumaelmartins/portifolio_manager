@@ -3,6 +3,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { Prisma } from '@prisma/client';
 import { UpdateProjectDto } from '../dto/update-project.dto';
+import { ContentState, contentStateWhere } from '../../../common/content-state';
 
 const projectInclude = {
   category: true,
@@ -38,9 +39,9 @@ export class ProjectRepository {
     });
   }
 
-  async findAll(userId: number) {
+  async findAll(userId: number, state: ContentState = 'active') {
     return this.prismaService.f_projects.findMany({
-      where: { f_userId: userId },
+      where: { f_userId: userId, ...contentStateWhere(state) },
       include: projectInclude,
       orderBy: { order: 'asc' },
     });
@@ -55,7 +56,7 @@ export class ProjectRepository {
 
   async findByTitle(title: string, userId: number) {
     return this.prismaService.f_projects.findFirst({
-      where: { title, f_userId: userId },
+      where: { title, f_userId: userId, deleted_at: null },
       include: projectInclude,
     });
   }
@@ -104,11 +105,43 @@ export class ProjectRepository {
 
   async findIdsByUser(userId: number): Promise<number[]> {
     const rows = await this.prismaService.f_projects.findMany({
-      where: { f_userId: userId },
+      where: { f_userId: userId, archived_at: null, deleted_at: null },
       select: { id: true },
       orderBy: { order: 'asc' },
     });
     return rows.map((row) => row.id);
+  }
+
+  async archive(id: number, userId: number) {
+    return this.prismaService.f_projects.update({
+      where: { id, f_userId: userId },
+      data: { archived_at: new Date() },
+      include: projectInclude,
+    });
+  }
+
+  async unarchive(id: number, userId: number) {
+    return this.prismaService.f_projects.update({
+      where: { id, f_userId: userId },
+      data: { archived_at: null },
+      include: projectInclude,
+    });
+  }
+
+  async softDelete(id: number, userId: number) {
+    return this.prismaService.f_projects.update({
+      where: { id, f_userId: userId },
+      data: { deleted_at: new Date() },
+      include: projectInclude,
+    });
+  }
+
+  async restore(id: number, userId: number) {
+    return this.prismaService.f_projects.update({
+      where: { id, f_userId: userId },
+      data: { deleted_at: null },
+      include: projectInclude,
+    });
   }
 
   async reorder(ids: number[]): Promise<void> {

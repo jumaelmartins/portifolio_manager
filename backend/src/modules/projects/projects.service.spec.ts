@@ -20,6 +20,10 @@ describe('ProjectsService', () => {
     findImageById: jest.fn(),
     findIdsByUser: jest.fn(),
     reorder: jest.fn(),
+    archive: jest.fn(),
+    unarchive: jest.fn(),
+    softDelete: jest.fn(),
+    restore: jest.fn(),
   };
   const config = {
     get: jest.fn().mockReturnValue('http://localhost:3000'),
@@ -243,6 +247,70 @@ describe('ProjectsService', () => {
         BadRequestException,
       );
       expect(repository.reorder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('soft-delete transitions', () => {
+    it('archives a project the user owns', async () => {
+      repository.findById.mockResolvedValue({ id: 7, f_userId: 42 });
+      repository.archive.mockResolvedValue({ id: 7 });
+
+      await service.archive(7, 42);
+
+      expect(repository.findById).toHaveBeenCalledWith(7, 42);
+      expect(repository.archive).toHaveBeenCalledWith(7, 42);
+    });
+
+    it('delete now trashes (soft) instead of hard-deleting', async () => {
+      repository.findById.mockResolvedValue({ id: 7, f_userId: 42 });
+      repository.softDelete.mockResolvedValue({ id: 7 });
+
+      await service.delete(7, 42);
+
+      expect(repository.softDelete).toHaveBeenCalledWith(7, 42);
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
+
+    it('rejects restore when a live project reuses the title', async () => {
+      repository.findById.mockResolvedValue({ id: 7, f_userId: 42, title: 'Dup' });
+      repository.findByTitle.mockResolvedValue({ id: 9, f_userId: 42, title: 'Dup' });
+
+      await expect(service.restore(7, 42)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(repository.restore).not.toHaveBeenCalled();
+    });
+
+    it('restores when no live project holds the title', async () => {
+      repository.findById.mockResolvedValue({ id: 7, f_userId: 42, title: 'Free' });
+      repository.findByTitle.mockResolvedValue(null);
+      repository.restore.mockResolvedValue({ id: 7 });
+
+      await service.restore(7, 42);
+
+      expect(repository.restore).toHaveBeenCalledWith(7, 42);
+    });
+
+    it('purges only a project already in trash', async () => {
+      repository.findById.mockResolvedValue({ id: 7, f_userId: 42, deleted_at: null });
+
+      await expect(service.purge(7, 42)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
+
+    it('purges a trashed project with a hard delete', async () => {
+      repository.findById.mockResolvedValue({
+        id: 7,
+        f_userId: 42,
+        deleted_at: new Date(),
+      });
+      repository.delete.mockResolvedValue({ id: 7 });
+
+      await service.purge(7, 42);
+
+      expect(repository.delete).toHaveBeenCalledWith(7, 42);
     });
   });
 });

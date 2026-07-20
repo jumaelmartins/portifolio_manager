@@ -84,7 +84,7 @@ describe('ProjectRepository', () => {
     await repository.findByTitle('Portfolio', 42);
 
     expect(projects.findMany).toHaveBeenCalledWith({
-      where: { f_userId: 42 },
+      where: { f_userId: 42, archived_at: null, deleted_at: null },
       include,
       orderBy: { order: 'asc' },
     });
@@ -93,7 +93,7 @@ describe('ProjectRepository', () => {
       include,
     });
     expect(projects.findFirst).toHaveBeenNthCalledWith(2, {
-      where: { title: 'Portfolio', f_userId: 42 },
+      where: { title: 'Portfolio', f_userId: 42, deleted_at: null },
       include,
     });
   });
@@ -173,6 +173,56 @@ describe('ProjectRepository', () => {
     });
     expect(images.findUnique).toHaveBeenCalledWith({
       where: { id: 9 },
+    });
+  });
+
+  it('filters the archived list', async () => {
+    await repository.findAll(42, 'archived');
+
+    expect(projects.findMany).toHaveBeenCalledWith({
+      where: { f_userId: 42, archived_at: { not: null }, deleted_at: null },
+      include,
+      orderBy: { order: 'asc' },
+    });
+  });
+
+  it('reorder id source excludes archived and trashed rows', async () => {
+    projects.findMany.mockResolvedValue([{ id: 3 }, { id: 1 }]);
+
+    await repository.findIdsByUser(42);
+
+    expect(projects.findMany).toHaveBeenCalledWith({
+      where: { f_userId: 42, archived_at: null, deleted_at: null },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+  });
+
+  it('archives, trashes and restores by stamping timestamps', async () => {
+    await repository.archive(7, 42);
+    await repository.softDelete(7, 42);
+    await repository.restore(7, 42);
+    await repository.unarchive(7, 42);
+
+    expect(projects.update).toHaveBeenNthCalledWith(1, {
+      where: { id: 7, f_userId: 42 },
+      data: { archived_at: expect.any(Date) },
+      include,
+    });
+    expect(projects.update).toHaveBeenNthCalledWith(2, {
+      where: { id: 7, f_userId: 42 },
+      data: { deleted_at: expect.any(Date) },
+      include,
+    });
+    expect(projects.update).toHaveBeenNthCalledWith(3, {
+      where: { id: 7, f_userId: 42 },
+      data: { deleted_at: null },
+      include,
+    });
+    expect(projects.update).toHaveBeenNthCalledWith(4, {
+      where: { id: 7, f_userId: 42 },
+      data: { archived_at: null },
+      include,
     });
   });
 });

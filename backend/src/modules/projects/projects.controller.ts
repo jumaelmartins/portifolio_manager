@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -32,8 +33,11 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll(@Req() req: AuthenticatedRequest) {
-    return this.projectsService.findAll(Number(req.user.sub));
+  findAll(
+    @Query('state') state: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findAll(Number(req.user.sub), state);
   }
 
   @Get(':id')
@@ -47,6 +51,38 @@ export class ProjectsController {
   @Patch('reorder')
   reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
     return this.projectsService.reorder(Number(req.user.sub), dto.ids);
+  }
+
+  @Patch(':id/archive')
+  archive(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.archive(id, Number(req.user.sub));
+  }
+
+  @Patch(':id/unarchive')
+  unarchive(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.unarchive(id, Number(req.user.sub));
+  }
+
+  @Patch(':id/restore')
+  restore(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.restore(id, Number(req.user.sub));
+  }
+
+  @Delete(':id/purge')
+  purge(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.projectsService.purge(id, Number(req.user.sub));
   }
 
   @Patch(':id')

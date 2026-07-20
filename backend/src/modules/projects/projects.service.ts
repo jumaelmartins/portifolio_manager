@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma, type f_images } from '@prisma/client';
 import { presentImage } from '../../common/presenters/image.presenter';
+import { parseContentState } from '../../common/content-state';
 import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -36,8 +37,11 @@ export class ProjectsService {
     return this.presentProject(created);
   }
 
-  async findAll(userId: number) {
-    const projects = await this.projectRepository.findAll(userId);
+  async findAll(userId: number, state?: string) {
+    const projects = await this.projectRepository.findAll(
+      userId,
+      parseContentState(state),
+    );
     return projects.map((project) => this.presentProject(project));
   }
 
@@ -83,12 +87,47 @@ export class ProjectsService {
   }
 
   async delete(id: number, userId: number) {
+    await this.requireOwned(id, userId);
+    return this.presentProject(
+      await this.projectRepository.softDelete(id, userId),
+    );
+  }
+
+  async archive(id: number, userId: number) {
+    await this.requireOwned(id, userId);
+    return this.presentProject(await this.projectRepository.archive(id, userId));
+  }
+
+  async unarchive(id: number, userId: number) {
+    await this.requireOwned(id, userId);
+    return this.presentProject(
+      await this.projectRepository.unarchive(id, userId),
+    );
+  }
+
+  async restore(id: number, userId: number) {
+    const project = await this.requireOwned(id, userId);
+    const clash = await this.projectRepository.findByTitle(project.title, userId);
+    if (clash && clash.id !== id) {
+      throw new ConflictException('Project Already Exists');
+    }
+    return this.presentProject(await this.projectRepository.restore(id, userId));
+  }
+
+  async purge(id: number, userId: number) {
+    const project = await this.requireOwned(id, userId);
+    if (!project.deleted_at) {
+      throw new NotFoundException('Project Not Found');
+    }
+    return this.projectRepository.delete(id, userId);
+  }
+
+  private async requireOwned(id: number, userId: number) {
     const project = await this.projectRepository.findById(id, userId);
     if (!project) {
       throw new NotFoundException('Project Not Found');
     }
-
-    return this.projectRepository.delete(id, userId);
+    return project;
   }
 
   private async validateCoverOwnership(
