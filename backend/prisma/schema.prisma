@@ -132,6 +132,8 @@ model f_experience {
   order        Int      @default(0)
   f_user       f_user   @relation(fields: [f_userId], references: [id])
   f_userId     Int
+  archived_at  DateTime?
+  deleted_at   DateTime?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 }
@@ -147,6 +149,8 @@ model f_education {
   order            Int       @default(0)
   f_user           f_user    @relation(fields: [f_userId], references: [id])
   f_userId         Int
+  archived_at      DateTime?
+  deleted_at       DateTime?
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
 }
@@ -162,6 +166,8 @@ model f_courses {
   order            Int       @default(0)
   f_user           f_user    @relation(fields: [f_userId], references: [id])
   f_userId         Int
+  archived_at      DateTime?
+  deleted_at       DateTime?
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
 }
@@ -180,10 +186,10 @@ model f_projects {
   f_images     f_images?        @relation(fields: [f_imagesId], references: [id])
   f_imagesId   Int?
   technologies d_technologies[]
+  archived_at  DateTime?
+  deleted_at   DateTime?
   created_at   DateTime         @default(now())
   updated_at   DateTime         @updatedAt
-
-  @@unique([f_userId, title])
 }
 
 // =====================
@@ -220,6 +226,8 @@ model custom_section {
   f_user       f_user                @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id      Int
   items        custom_section_item[]
+  archived_at  DateTime?
+  deleted_at   DateTime?
   created_at   DateTime              @default(now())
   updated_at   DateTime              @updatedAt
 
@@ -227,13 +235,15 @@ model custom_section {
 }
 
 model custom_section_item {
-  id         Int            @id @default(autoincrement())
-  data       Json
-  order      Int            @default(0)
-  section    custom_section @relation(fields: [section_id], references: [id], onDelete: Cascade)
-  section_id Int
-  created_at DateTime       @default(now())
-  updated_at DateTime       @updatedAt
+  id          Int            @id @default(autoincrement())
+  data        Json
+  order       Int            @default(0)
+  section     custom_section @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  section_id  Int
+  archived_at DateTime?
+  deleted_at  DateTime?
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
 
   @@map("custom_section_items")
 }
