@@ -172,6 +172,12 @@ model f_courses {
   updated_at       DateTime  @updatedAt
 }
 
+// NOTE: (f_userId, title) uniqueness is a PARTIAL unique index
+// (WHERE deleted_at IS NULL), maintained by raw SQL in migration
+// 20260720203300_add_soft_delete_columns. Prisma 6 cannot express a partial
+// index, so it is intentionally absent here. A future `prisma migrate dev`
+// will detect the index as drift and try to DROP it — remove that DROP line
+// from the generated migration and keep the partial index by hand.
 model f_projects {
   id           Int              @id @default(autoincrement())
   title        String

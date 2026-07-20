@@ -118,7 +118,11 @@ describe('CustomSectionsService', () => {
 
   describe('section transitions', () => {
     it('archives a section the user owns', async () => {
-      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 42, items: [] });
+      repository.findSectionById.mockResolvedValue({
+        id: 5,
+        user_id: 42,
+        items: [],
+      });
 
       await service.archiveSection(5, 42, UserRoles.REGULAR);
 
@@ -126,7 +130,11 @@ describe('CustomSectionsService', () => {
     });
 
     it('deleteSection now trashes (soft)', async () => {
-      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 42, items: [] });
+      repository.findSectionById.mockResolvedValue({
+        id: 5,
+        user_id: 42,
+        items: [],
+      });
 
       await service.deleteSection(5, 42, UserRoles.REGULAR);
 
@@ -135,7 +143,11 @@ describe('CustomSectionsService', () => {
     });
 
     it('forbids a transition on another user section', async () => {
-      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 99, items: [] });
+      repository.findSectionById.mockResolvedValue({
+        id: 5,
+        user_id: 99,
+        items: [],
+      });
 
       await expect(
         service.archiveSection(5, 42, UserRoles.REGULAR),
@@ -187,10 +199,19 @@ describe('CustomSectionsService', () => {
     });
 
     it('lists items in a given state for the owner', async () => {
-      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 42, items: [] });
+      repository.findSectionById.mockResolvedValue({
+        id: 5,
+        user_id: 42,
+        items: [],
+      });
       repository.findItemsBySection.mockResolvedValue([{ id: 8 }]);
 
-      const result = await service.findSectionItems(5, 42, UserRoles.REGULAR, 'trash');
+      const result = await service.findSectionItems(
+        5,
+        42,
+        UserRoles.REGULAR,
+        'trash',
+      );
 
       expect(repository.findItemsBySection).toHaveBeenCalledWith(5, 'trash');
       expect(result).toEqual([{ id: 8 }]);

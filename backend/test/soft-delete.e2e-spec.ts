@@ -33,7 +33,9 @@ describe('Soft-delete lifecycle (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get(`/public/users/${userId}`)
       .expect(200);
-    return (res.body.f_experience as Array<{ tile: string }>).map((e) => e.tile);
+    return (res.body.f_experience as Array<{ tile: string }>).map(
+      (e) => e.tile,
+    );
   };
 
   beforeAll(async () => {

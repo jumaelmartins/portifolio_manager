@@ -272,8 +272,16 @@ describe('ProjectsService', () => {
     });
 
     it('rejects restore when a live project reuses the title', async () => {
-      repository.findById.mockResolvedValue({ id: 7, f_userId: 42, title: 'Dup' });
-      repository.findByTitle.mockResolvedValue({ id: 9, f_userId: 42, title: 'Dup' });
+      repository.findById.mockResolvedValue({
+        id: 7,
+        f_userId: 42,
+        title: 'Dup',
+      });
+      repository.findByTitle.mockResolvedValue({
+        id: 9,
+        f_userId: 42,
+        title: 'Dup',
+      });
 
       await expect(service.restore(7, 42)).rejects.toBeInstanceOf(
         ConflictException,
@@ -282,7 +290,11 @@ describe('ProjectsService', () => {
     });
 
     it('restores when no live project holds the title', async () => {
-      repository.findById.mockResolvedValue({ id: 7, f_userId: 42, title: 'Free' });
+      repository.findById.mockResolvedValue({
+        id: 7,
+        f_userId: 42,
+        title: 'Free',
+      });
       repository.findByTitle.mockResolvedValue(null);
       repository.restore.mockResolvedValue({ id: 7 });
 
@@ -292,7 +304,11 @@ describe('ProjectsService', () => {
     });
 
     it('purges only a project already in trash', async () => {
-      repository.findById.mockResolvedValue({ id: 7, f_userId: 42, deleted_at: null });
+      repository.findById.mockResolvedValue({
+        id: 7,
+        f_userId: 42,
+        deleted_at: null,
+      });
 
       await expect(service.purge(7, 42)).rejects.toBeInstanceOf(
         NotFoundException,

@@ -125,10 +125,7 @@ export class CustomSectionsController {
   }
 
   @Delete('items/:itemId/purge')
-  purgeItem(
-    @Param('itemId') itemId: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  purgeItem(@Param('itemId') itemId: string, @Req() req: AuthenticatedRequest) {
     return this.service.purgeItem(
       +itemId,
       Number(req.user.sub),

@@ -95,7 +95,9 @@ export class ProjectsService {
 
   async archive(id: number, userId: number) {
     await this.requireOwned(id, userId);
-    return this.presentProject(await this.projectRepository.archive(id, userId));
+    return this.presentProject(
+      await this.projectRepository.archive(id, userId),
+    );
   }
 
   async unarchive(id: number, userId: number) {
@@ -107,11 +109,16 @@ export class ProjectsService {
 
   async restore(id: number, userId: number) {
     const project = await this.requireOwned(id, userId);
-    const clash = await this.projectRepository.findByTitle(project.title, userId);
+    const clash = await this.projectRepository.findByTitle(
+      project.title,
+      userId,
+    );
     if (clash && clash.id !== id) {
       throw new ConflictException('Project Already Exists');
     }
-    return this.presentProject(await this.projectRepository.restore(id, userId));
+    return this.presentProject(
+      await this.projectRepository.restore(id, userId),
+    );
   }
 
   async purge(id: number, userId: number) {

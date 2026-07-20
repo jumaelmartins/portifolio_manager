@@ -30,7 +30,10 @@ export class CustomSectionsService {
     state?: string,
   ) {
     await this.requireSection(sectionId, userId, role);
-    return this.repository.findItemsBySection(sectionId, parseContentState(state));
+    return this.repository.findItemsBySection(
+      sectionId,
+      parseContentState(state),
+    );
   }
 
   async reorderSections(userId: number, ids: number[]) {

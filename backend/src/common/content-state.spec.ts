@@ -1,8 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import {
-  parseContentState,
-  contentStateWhere,
-} from './content-state';
+import { parseContentState, contentStateWhere } from './content-state';
 
 describe('content-state', () => {
   describe('parseContentState', () => {
