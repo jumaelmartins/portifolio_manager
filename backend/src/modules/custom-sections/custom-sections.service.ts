@@ -9,6 +9,7 @@ import { CreateCustomSectionDto } from './dto/create-section.dto';
 import { CreateCustomItemDto } from './dto/create-item.dto';
 import { UserRoles } from '../../utils/types';
 import { assertExactIdSet } from '../../common/validators/assert-exact-id-set';
+import { parseContentState } from '../../common/content-state';
 
 @Injectable()
 export class CustomSectionsService {
@@ -18,8 +19,18 @@ export class CustomSectionsService {
     return this.repository.createSection(userId, dto);
   }
 
-  async findUserSections(userId: number) {
-    return this.repository.findSectionsByUser(userId);
+  async findUserSections(userId: number, state?: string) {
+    return this.repository.findSectionsByUser(userId, parseContentState(state));
+  }
+
+  async findSectionItems(
+    sectionId: number,
+    userId: number,
+    role: number,
+    state?: string,
+  ) {
+    await this.requireSection(sectionId, userId, role);
+    return this.repository.findItemsBySection(sectionId, parseContentState(state));
   }
 
   async reorderSections(userId: number, ids: number[]) {
@@ -65,11 +76,37 @@ export class CustomSectionsService {
   }
 
   async deleteSection(id: number, userId: number, role: number) {
+    await this.requireSection(id, userId, role);
+    return this.repository.softDeleteSection(id);
+  }
+
+  async archiveSection(id: number, userId: number, role: number) {
+    await this.requireSection(id, userId, role);
+    return this.repository.archiveSection(id);
+  }
+
+  async unarchiveSection(id: number, userId: number, role: number) {
+    await this.requireSection(id, userId, role);
+    return this.repository.unarchiveSection(id);
+  }
+
+  async restoreSection(id: number, userId: number, role: number) {
+    await this.requireSection(id, userId, role);
+    return this.repository.restoreSection(id);
+  }
+
+  async purgeSection(id: number, userId: number, role: number) {
+    const section = await this.requireSection(id, userId, role);
+    if (!section.deleted_at) throw new NotFoundException('Section not found');
+    return this.repository.deleteSection(id);
+  }
+
+  private async requireSection(id: number, userId: number, role: number) {
     const section = await this.findSectionById(id);
     if (section.user_id !== userId && role !== UserRoles.SYSADMIN) {
       throw new ForbiddenException('Acesso negado');
     }
-    return this.repository.deleteSection(id);
+    return section;
   }
 
   async createItem(
@@ -109,14 +146,38 @@ export class CustomSectionsService {
   }
 
   async deleteItem(itemId: number, userId: number, role: number) {
+    await this.requireItem(itemId, userId, role);
+    return this.repository.softDeleteItem(itemId);
+  }
+
+  async archiveItem(itemId: number, userId: number, role: number) {
+    await this.requireItem(itemId, userId, role);
+    return this.repository.archiveItem(itemId);
+  }
+
+  async unarchiveItem(itemId: number, userId: number, role: number) {
+    await this.requireItem(itemId, userId, role);
+    return this.repository.unarchiveItem(itemId);
+  }
+
+  async restoreItem(itemId: number, userId: number, role: number) {
+    await this.requireItem(itemId, userId, role);
+    return this.repository.restoreItem(itemId);
+  }
+
+  async purgeItem(itemId: number, userId: number, role: number) {
+    const item = await this.requireItem(itemId, userId, role);
+    if (!item.deleted_at) throw new NotFoundException('Item not found');
+    return this.repository.deleteItem(itemId);
+  }
+
+  private async requireItem(itemId: number, userId: number, role: number) {
     const item = await this.repository.findItemById(itemId);
     if (!item) throw new NotFoundException('Item not found');
-
     if (item.section.user_id !== userId && role !== UserRoles.SYSADMIN) {
       throw new ForbiddenException('Acesso negado');
     }
-
-    return this.repository.deleteItem(itemId);
+    return item;
   }
 
   private validateItemDataAgainstSchema(

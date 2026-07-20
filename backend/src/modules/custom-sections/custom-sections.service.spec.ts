@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CustomSectionsService } from './custom-sections.service';
 import { UserRoles } from '../../utils/types';
 
@@ -17,6 +21,15 @@ describe('CustomSectionsService', () => {
     reorderSections: jest.fn(),
     findItemIdsBySection: jest.fn(),
     reorderItems: jest.fn(),
+    findItemsBySection: jest.fn(),
+    archiveSection: jest.fn(),
+    unarchiveSection: jest.fn(),
+    softDeleteSection: jest.fn(),
+    restoreSection: jest.fn(),
+    archiveItem: jest.fn(),
+    unarchiveItem: jest.fn(),
+    softDeleteItem: jest.fn(),
+    restoreItem: jest.fn(),
   };
 
   let service: CustomSectionsService;
@@ -100,6 +113,87 @@ describe('CustomSectionsService', () => {
 
       expect(repository.reorderItems).toHaveBeenCalledWith([3, 1, 2]);
       expect(result).toEqual(reordered);
+    });
+  });
+
+  describe('section transitions', () => {
+    it('archives a section the user owns', async () => {
+      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 42, items: [] });
+
+      await service.archiveSection(5, 42, UserRoles.REGULAR);
+
+      expect(repository.archiveSection).toHaveBeenCalledWith(5);
+    });
+
+    it('deleteSection now trashes (soft)', async () => {
+      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 42, items: [] });
+
+      await service.deleteSection(5, 42, UserRoles.REGULAR);
+
+      expect(repository.softDeleteSection).toHaveBeenCalledWith(5);
+      expect(repository.deleteSection).not.toHaveBeenCalled();
+    });
+
+    it('forbids a transition on another user section', async () => {
+      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 99, items: [] });
+
+      await expect(
+        service.archiveSection(5, 42, UserRoles.REGULAR),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('purges only a trashed section', async () => {
+      repository.findSectionById.mockResolvedValue({
+        id: 5,
+        user_id: 42,
+        items: [],
+        deleted_at: null,
+      });
+
+      await expect(
+        service.purgeSection(5, 42, UserRoles.REGULAR),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repository.deleteSection).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('item transitions', () => {
+    const ownedItem = { id: 8, deleted_at: null, section: { user_id: 42 } };
+
+    it('archives an item the user owns', async () => {
+      repository.findItemById.mockResolvedValue(ownedItem);
+
+      await service.archiveItem(8, 42, UserRoles.REGULAR);
+
+      expect(repository.archiveItem).toHaveBeenCalledWith(8);
+    });
+
+    it('deleteItem now trashes (soft)', async () => {
+      repository.findItemById.mockResolvedValue(ownedItem);
+
+      await service.deleteItem(8, 42, UserRoles.REGULAR);
+
+      expect(repository.softDeleteItem).toHaveBeenCalledWith(8);
+      expect(repository.deleteItem).not.toHaveBeenCalled();
+    });
+
+    it('purges only a trashed item', async () => {
+      repository.findItemById.mockResolvedValue(ownedItem);
+
+      await expect(
+        service.purgeItem(8, 42, UserRoles.REGULAR),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repository.deleteItem).not.toHaveBeenCalled();
+    });
+
+    it('lists items in a given state for the owner', async () => {
+      repository.findSectionById.mockResolvedValue({ id: 5, user_id: 42, items: [] });
+      repository.findItemsBySection.mockResolvedValue([{ id: 8 }]);
+
+      const result = await service.findSectionItems(5, 42, UserRoles.REGULAR, 'trash');
+
+      expect(repository.findItemsBySection).toHaveBeenCalledWith(5, 'trash');
+      expect(result).toEqual([{ id: 8 }]);
     });
   });
 });

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -31,38 +32,31 @@ export class CustomSectionsController {
   }
 
   @Get()
-  findUserSections(@Req() req: AuthenticatedRequest) {
-    return this.service.findUserSections(Number(req.user.sub));
+  findUserSections(
+    @Query('state') state: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.findUserSections(Number(req.user.sub), state);
   }
 
   @Patch('reorder')
-  reorderSections(
-    @Body() dto: ReorderDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  reorderSections(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
     return this.service.reorderSections(Number(req.user.sub), dto.ids);
   }
 
-  @Patch(':id')
-  updateSection(
-    @Param('id') id: string,
-    @Body() dto: Partial<CreateCustomSectionDto>,
+  // --- item routes (literal-prefixed / deeper paths first) ---
+
+  @Get(':sectionId/items')
+  findSectionItems(
+    @Param('sectionId') sectionId: string,
+    @Query('state') state: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.service.updateSection(
-      +id,
-      dto,
+    return this.service.findSectionItems(
+      +sectionId,
       Number(req.user.sub),
       Number(req.user.role),
-    );
-  }
-
-  @Delete(':id')
-  deleteSection(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.service.deleteSection(
-      +id,
-      Number(req.user.sub),
-      Number(req.user.role),
+      state,
     );
   }
 
@@ -94,6 +88,54 @@ export class CustomSectionsController {
     );
   }
 
+  @Patch('items/:itemId/archive')
+  archiveItem(
+    @Param('itemId') itemId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.archiveItem(
+      +itemId,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch('items/:itemId/unarchive')
+  unarchiveItem(
+    @Param('itemId') itemId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.unarchiveItem(
+      +itemId,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch('items/:itemId/restore')
+  restoreItem(
+    @Param('itemId') itemId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.restoreItem(
+      +itemId,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Delete('items/:itemId/purge')
+  purgeItem(
+    @Param('itemId') itemId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.purgeItem(
+      +itemId,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
   @Patch('items/:itemId')
   updateItem(
     @Param('itemId') itemId: string,
@@ -115,6 +157,67 @@ export class CustomSectionsController {
   ) {
     return this.service.deleteItem(
       +itemId,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  // --- section action routes (before bare :id) ---
+
+  @Patch(':id/archive')
+  archiveSection(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.service.archiveSection(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id/unarchive')
+  unarchiveSection(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.service.unarchiveSection(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id/restore')
+  restoreSection(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.service.restoreSection(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Delete(':id/purge')
+  purgeSection(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.service.purgeSection(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id')
+  updateSection(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateCustomSectionDto>,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateSection(
+      +id,
+      dto,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Delete(':id')
+  deleteSection(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.service.deleteSection(
+      +id,
       Number(req.user.sub),
       Number(req.user.role),
     );
