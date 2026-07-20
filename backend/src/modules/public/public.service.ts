@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class PublicService {
@@ -20,6 +20,7 @@ export class PublicService {
           },
         },
         f_projects: {
+          where: { archived_at: null, deleted_at: null },
           orderBy: { order: 'asc' },
           select: {
             id: true,
@@ -35,6 +36,7 @@ export class PublicService {
           },
         },
         f_education: {
+          where: { archived_at: null, deleted_at: null },
           orderBy: { order: 'asc' },
           select: {
             id: true,
@@ -48,6 +50,7 @@ export class PublicService {
           },
         },
         f_courses: {
+          where: { archived_at: null, deleted_at: null },
           orderBy: { order: 'asc' },
           select: {
             id: true,
@@ -61,6 +64,7 @@ export class PublicService {
           },
         },
         f_experience: {
+          where: { archived_at: null, deleted_at: null },
           orderBy: { order: 'asc' },
           select: {
             id: true,
@@ -74,6 +78,7 @@ export class PublicService {
           },
         },
         custom_sections: {
+          where: { archived_at: null, deleted_at: null },
           select: {
             id: true,
             name: true,
@@ -82,6 +87,7 @@ export class PublicService {
             field_schema: true,
             order: true,
             items: {
+              where: { archived_at: null, deleted_at: null },
               select: {
                 id: true,
                 data: true,
