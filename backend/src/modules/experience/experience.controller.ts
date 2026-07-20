@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { ExperienceService } from './experience.service';
 import { CreateExperienceDto } from './dto/create-experience.dto';
@@ -28,10 +29,14 @@ export class ExperienceController {
   }
 
   @Get()
-  findAll(@Req() req: AuthenticatedRequest) {
+  findAll(
+    @Query('state') state: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.experienceService.findAll(
       Number(req.user.sub),
       Number(req.user.role),
+      state,
     );
   }
 
@@ -43,6 +48,42 @@ export class ExperienceController {
   @Patch('reorder')
   reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
     return this.experienceService.reorder(Number(req.user.sub), dto.ids);
+  }
+
+  @Patch(':id/archive')
+  archive(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.experienceService.archive(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id/unarchive')
+  unarchive(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.experienceService.unarchive(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id/restore')
+  restore(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.experienceService.restore(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Delete(':id/purge')
+  purge(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.experienceService.purge(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
   }
 
   @Patch(':id')

@@ -2,6 +2,7 @@ import { f_education, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateEducationDto } from '../dto/create-education.dto';
 import { Injectable } from '@nestjs/common';
+import { ContentState, contentStateWhere } from '../../../common/content-state';
 
 @Injectable()
 export class EducationRepository {
@@ -23,9 +24,15 @@ export class EducationRepository {
     });
   }
 
-  async findAll(userId?: number): Promise<f_education[]> {
+  async findAll(
+    userId?: number,
+    state: ContentState = 'active',
+  ): Promise<f_education[]> {
     return await this.prismaService.f_education.findMany({
-      where: userId ? { f_userId: userId } : undefined,
+      where: {
+        ...(userId ? { f_userId: userId } : {}),
+        ...contentStateWhere(state),
+      },
       orderBy: { order: 'asc' },
     });
   }
@@ -47,11 +54,39 @@ export class EducationRepository {
 
   async findIdsByUser(userId: number): Promise<number[]> {
     const rows = await this.prismaService.f_education.findMany({
-      where: { f_userId: userId },
+      where: { f_userId: userId, archived_at: null, deleted_at: null },
       select: { id: true },
       orderBy: { order: 'asc' },
     });
     return rows.map((row) => row.id);
+  }
+
+  async archive(id: number) {
+    return this.prismaService.f_education.update({
+      where: { id },
+      data: { archived_at: new Date() },
+    });
+  }
+
+  async unarchive(id: number) {
+    return this.prismaService.f_education.update({
+      where: { id },
+      data: { archived_at: null },
+    });
+  }
+
+  async softDelete(id: number) {
+    return this.prismaService.f_education.update({
+      where: { id },
+      data: { deleted_at: new Date() },
+    });
+  }
+
+  async restore(id: number) {
+    return this.prismaService.f_education.update({
+      where: { id },
+      data: { deleted_at: null },
+    });
   }
 
   async reorder(ids: number[]): Promise<void> {

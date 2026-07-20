@@ -1,5 +1,10 @@
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ExperienceService } from './experience.service';
+import { UserRoles } from '../../utils/types';
 
 describe('ExperienceService', () => {
   const repository = {
@@ -10,6 +15,10 @@ describe('ExperienceService', () => {
     delete: jest.fn(),
     findIdsByUser: jest.fn(),
     reorder: jest.fn(),
+    archive: jest.fn(),
+    unarchive: jest.fn(),
+    softDelete: jest.fn(),
+    restore: jest.fn(),
   };
 
   let service: ExperienceService;
@@ -38,6 +47,68 @@ describe('ExperienceService', () => {
         BadRequestException,
       );
       expect(repository.reorder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('soft-delete transitions', () => {
+    const OWNER = 42;
+    const owned = { id: 7, f_userId: OWNER, deleted_at: null };
+
+    it('archives a row the user owns', async () => {
+      repository.findById.mockResolvedValue(owned);
+
+      await service.archive(7, OWNER, UserRoles.REGULAR);
+
+      expect(repository.archive).toHaveBeenCalledWith(7);
+    });
+
+    it('remove now trashes (soft) instead of hard-deleting', async () => {
+      repository.findById.mockResolvedValue(owned);
+
+      await service.remove(7, OWNER, UserRoles.REGULAR);
+
+      expect(repository.softDelete).toHaveBeenCalledWith(7);
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
+
+    it('forbids a transition on another user row', async () => {
+      repository.findById.mockResolvedValue({
+        id: 7,
+        f_userId: 99,
+        deleted_at: null,
+      });
+
+      await expect(
+        service.archive(7, OWNER, UserRoles.REGULAR),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('purges only a trashed row', async () => {
+      repository.findById.mockResolvedValue({ ...owned, deleted_at: null });
+
+      await expect(
+        service.purge(7, OWNER, UserRoles.REGULAR),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
+
+    it('purges a trashed row with a hard delete', async () => {
+      repository.findById.mockResolvedValue({
+        ...owned,
+        deleted_at: new Date(),
+      });
+
+      await service.purge(7, OWNER, UserRoles.REGULAR);
+
+      expect(repository.delete).toHaveBeenCalledWith(7);
+    });
+
+    it('reads the requested state', async () => {
+      repository.findAll.mockResolvedValue([]);
+
+      await service.findAll(OWNER, UserRoles.REGULAR, 'trash');
+
+      expect(repository.findAll).toHaveBeenCalledWith(OWNER, 'trash');
     });
   });
 });

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -28,10 +29,14 @@ export class CoursesController {
   }
 
   @Get()
-  findAll(@Req() req: AuthenticatedRequest) {
+  findAll(
+    @Query('state') state: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.coursesService.findAll(
       Number(req.user.sub),
       Number(req.user.role),
+      state,
     );
   }
 
@@ -43,6 +48,42 @@ export class CoursesController {
   @Patch('reorder')
   reorder(@Body() dto: ReorderDto, @Req() req: AuthenticatedRequest) {
     return this.coursesService.reorder(Number(req.user.sub), dto.ids);
+  }
+
+  @Patch(':id/archive')
+  archive(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.coursesService.archive(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id/unarchive')
+  unarchive(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.coursesService.unarchive(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Patch(':id/restore')
+  restore(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.coursesService.restore(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
+  }
+
+  @Delete(':id/purge')
+  purge(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.coursesService.purge(
+      +id,
+      Number(req.user.sub),
+      Number(req.user.role),
+    );
   }
 
   @Patch(':id')
