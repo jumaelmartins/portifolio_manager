@@ -25,7 +25,7 @@ describe("/api/courses", () => {
 
   it("normalizes the courses collection", async () => {
     backendFetch.mockResolvedValue(Response.json([backendEntry]));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/courses"));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([
       expect.objectContaining({ id: 3, title: "Machine Learning Fundamentals", institutionName: "Coursera" }),
@@ -77,7 +77,7 @@ describe("/api/courses", () => {
 
   it("passes through backend error responses", async () => {
     backendFetch.mockResolvedValue(new Response(null, { status: 500 }));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/courses"));
     expect(response.status).toBe(500);
   });
 });

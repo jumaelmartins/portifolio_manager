@@ -10,8 +10,10 @@ import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
 import { revalidatePortfolio } from "@/lib/api/revalidate";
 
-export async function GET() {
-  const response = await backendFetch("/courses");
+export async function GET(request: Request) {
+  const state = new URL(request.url).searchParams.get("state");
+  const suffix = state && state !== "active" ? `?state=${state}` : "";
+  const response = await backendFetch(`/courses${suffix}`);
   if (!response.ok) return toBffResponse(response);
   const items = (await response.json()) as BackendCourse[];
   return NextResponse.json(items.map(normalizeCourse));
