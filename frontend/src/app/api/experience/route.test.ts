@@ -25,7 +25,7 @@ describe("/api/experience", () => {
 
   it("normalizes the experience collection", async () => {
     backendFetch.mockResolvedValue(Response.json([backendEntry]));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/experience"));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([
       expect.objectContaining({ id: 1, title: "Software Engineer", companyName: "Acme Corp" }),
@@ -81,7 +81,7 @@ describe("/api/experience", () => {
 
   it("passes through backend error responses", async () => {
     backendFetch.mockResolvedValue(new Response(null, { status: 500 }));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/experience"));
     expect(response.status).toBe(500);
   });
 });
