@@ -6,13 +6,18 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import type { ContentState } from "@/lib/content-state";
 import type { CourseEntry, CourseInput } from "../types";
 import {
+  archiveCourse,
   createCourse,
   deleteCourse,
   getCourse,
   getCourses,
+  purgeCourse,
   reorderCourses,
+  restoreCourse,
+  unarchiveCourse,
   updateCourse,
 } from "./course-api";
 import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
@@ -23,10 +28,10 @@ export const courseKeys = {
   detail: (id: number) => ["courses", id] as const,
 };
 
-export function useCourses() {
+export function useCourses(state: ContentState = "active") {
   return useQuery({
-    queryKey: courseKeys.all,
-    queryFn: getCourses,
+    queryKey: [...courseKeys.all, state],
+    queryFn: () => getCourses(state),
   });
 }
 
@@ -87,8 +92,36 @@ export function useDeleteCourse() {
 
 export function useReorderCourses() {
   return useReorder<CourseEntry[]>({
-    queryKey: courseKeys.all,
+    queryKey: [...courseKeys.all, "active"],
     mutationFn: reorderCourses,
     applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
+}
+
+function useCourseTransition(
+  mutationFn: (id: number) => Promise<{ id: number }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: courseKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveCourse() {
+  return useCourseTransition(archiveCourse);
+}
+export function useUnarchiveCourse() {
+  return useCourseTransition(unarchiveCourse);
+}
+export function useRestoreCourse() {
+  return useCourseTransition(restoreCourse);
+}
+export function usePurgeCourse() {
+  return useCourseTransition(purgeCourse);
 }

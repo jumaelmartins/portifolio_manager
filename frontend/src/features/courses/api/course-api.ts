@@ -1,4 +1,5 @@
 import type { ApiError } from "@/lib/api/types";
+import type { ContentState } from "@/lib/content-state";
 import type { CourseEntry, CourseInput } from "../types";
 
 async function requestJson<T>(
@@ -34,8 +35,9 @@ async function requestJson<T>(
   return payload as T;
 }
 
-export function getCourses() {
-  return requestJson<CourseEntry[]>("/api/courses");
+export function getCourses(state: ContentState = "active") {
+  const suffix = state === "active" ? "" : `?state=${state}`;
+  return requestJson<CourseEntry[]>(`/api/courses${suffix}`);
 }
 
 export function getCourse(id: number) {
@@ -66,5 +68,29 @@ export function reorderCourses(ids: number[]) {
   return requestJson<CourseEntry[]>("/api/courses/reorder", {
     method: "PATCH",
     body: JSON.stringify({ ids }),
+  });
+}
+
+export function archiveCourse(id: number) {
+  return requestJson<{ id: number }>(`/api/courses/${id}/archive`, {
+    method: "PATCH",
+  });
+}
+
+export function unarchiveCourse(id: number) {
+  return requestJson<{ id: number }>(`/api/courses/${id}/unarchive`, {
+    method: "PATCH",
+  });
+}
+
+export function restoreCourse(id: number) {
+  return requestJson<{ id: number }>(`/api/courses/${id}/restore`, {
+    method: "PATCH",
+  });
+}
+
+export function purgeCourse(id: number) {
+  return requestJson<{ id: number }>(`/api/courses/${id}/purge`, {
+    method: "DELETE",
   });
 }
