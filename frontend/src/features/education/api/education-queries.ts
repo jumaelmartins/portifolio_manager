@@ -6,15 +6,20 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import type { ContentState } from "@/lib/content-state";
 import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
 import { useReorder } from "@/lib/reorder/use-reorder";
 import type { EducationEntry, EducationInput } from "../types";
 import {
+  archiveEducation,
   createEducation,
   deleteEducation,
   getEducation,
   getEducations,
+  purgeEducation,
   reorderEducations,
+  restoreEducation,
+  unarchiveEducation,
   updateEducation,
 } from "./education-api";
 
@@ -23,10 +28,10 @@ export const educationKeys = {
   detail: (id: number) => ["education", id] as const,
 };
 
-export function useEducations() {
+export function useEducations(state: ContentState = "active") {
   return useQuery({
-    queryKey: educationKeys.all,
-    queryFn: getEducations,
+    queryKey: [...educationKeys.all, state],
+    queryFn: () => getEducations(state),
   });
 }
 
@@ -87,8 +92,36 @@ export function useDeleteEducation() {
 
 export function useReorderEducations() {
   return useReorder<EducationEntry[]>({
-    queryKey: educationKeys.all,
+    queryKey: [...educationKeys.all, "active"],
     mutationFn: reorderEducations,
     applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
+}
+
+function useEducationTransition(
+  mutationFn: (id: number) => Promise<{ id: number }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: educationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveEducation() {
+  return useEducationTransition(archiveEducation);
+}
+export function useUnarchiveEducation() {
+  return useEducationTransition(unarchiveEducation);
+}
+export function useRestoreEducation() {
+  return useEducationTransition(restoreEducation);
+}
+export function usePurgeEducation() {
+  return useEducationTransition(purgeEducation);
 }
