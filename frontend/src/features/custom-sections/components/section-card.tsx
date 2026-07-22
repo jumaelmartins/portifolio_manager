@@ -1,21 +1,36 @@
 // frontend/src/features/custom-sections/components/section-card.tsx
 "use client";
 
-import { List, Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { List } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ContentRowActions } from "@/components/ui/content-row-actions";
+import type { ContentState } from "@/lib/content-state";
 import type { CustomSection } from "../types";
 
 type SectionCardProps = {
   section: CustomSection;
+  state: ContentState;
   onManageItems: (sectionId: number) => void;
-  onDelete: (section: CustomSection) => void;
+  onArchive: (section: CustomSection) => void;
+  onUnarchive: (section: CustomSection) => void;
+  onRestore: (section: CustomSection) => void;
+  onSoftDelete: (section: CustomSection) => void;
+  onPurge: (section: CustomSection) => void;
 };
 
-export function SectionCard({ section, onManageItems, onDelete }: SectionCardProps) {
+export function SectionCard({
+  section,
+  state,
+  onManageItems,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
+}: SectionCardProps) {
   return (
     <Card className="bg-card/75">
       <CardHeader className="flex flex-row items-start justify-between gap-3">
@@ -34,28 +49,21 @@ export function SectionCard({ section, onManageItems, onDelete }: SectionCardPro
           {section.items.length} {section.items.length === 1 ? "item" : "items"}
         </Badge>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
+      <CardContent className="flex flex-wrap items-center justify-between gap-2">
         <Button variant="secondary" size="sm" onClick={() => onManageItems(section.id)}>
           <List data-icon="inline-start" />
           Manage items
         </Button>
-        <Link
-          href={`/custom-sections/${section.id}/edit`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-        >
-          <Pencil data-icon="inline-start" />
-          Edit
-        </Link>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive"
-          aria-label={`Delete ${section.name}`}
-          onClick={() => onDelete(section)}
-        >
-          <Trash2 data-icon="inline-start" />
-          Delete
-        </Button>
+        <ContentRowActions
+          state={state}
+          label={section.name}
+          editHref={`/custom-sections/${section.id}/edit`}
+          onArchive={() => onArchive(section)}
+          onUnarchive={() => onUnarchive(section)}
+          onRestore={() => onRestore(section)}
+          onSoftDelete={() => onSoftDelete(section)}
+          onPurge={() => onPurge(section)}
+        />
       </CardContent>
     </Card>
   );

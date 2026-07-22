@@ -15,13 +15,28 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
 import { SortableList } from "@/components/ui/sortable-list";
+import { StateFilter } from "@/components/ui/state-filter";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
-import { useDeleteSection, useReorderSections, useSections } from "../api/custom-sections-queries";
+import type { ContentState } from "@/lib/content-state";
+import { useReorderSections } from "../api/custom-sections-queries";
 import type { CustomSection } from "../types";
 import { DeleteSectionDialog } from "./delete-section-dialog";
 import { ItemsDrawer } from "./items-drawer";
 import { SectionCard } from "./section-card";
+
+type SectionsViewProps = {
+  sections: CustomSection[];
+  state: ContentState;
+  isPending: boolean;
+  error: Error | null;
+  onRetry: () => void;
+  onArchive: (section: CustomSection) => void;
+  onUnarchive: (section: CustomSection) => void;
+  onRestore: (section: CustomSection) => void;
+  onSoftDelete: (section: CustomSection) => void;
+  onPurge: (section: CustomSection) => Promise<void>;
+};
 
 const SECTION_SORTS: SortOption<CustomSection>[] = [
   {
@@ -34,23 +49,45 @@ const SECTION_SORTS: SortOption<CustomSection>[] = [
   { key: "name-desc", label: "Name Z–A", compare: (a, b) => b.name.localeCompare(a.name) },
 ];
 
-export function SectionsView() {
+export function SectionsView({
+  sections,
+  state,
+  isPending,
+  error,
+  onRetry,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
+}: SectionsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const sections = useSections();
-  const deleteSection = useDeleteSection();
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
-  const [sectionToDelete, setSectionToDelete] = useState<CustomSection | null>(null);
+  const [sectionToPurge, setSectionToPurge] = useState<CustomSection | null>(null);
 
   const controls = useListControls<CustomSection>({
-    items: sections.data ?? [],
+    items: sections,
     basePath: "/custom-sections",
     searchAccessor: (section) => `${section.name} ${section.description ?? ""}`,
     sorts: SECTION_SORTS,
+    defaultState: "active",
   });
 
+  // Manual order is the default sort for sections, but only meaningful in Active:
+  // useListControls.setState always resets sortKey to the default ("order"), so
+  // Archived/Trash can land on sortKey "order" even though "Manual order" isn't
+  // one of their SortSelect options. Gate reorder on state === "active" and fall
+  // back the *displayed* SortSelect value to the first non-manual option so the
+  // control never shows a value that isn't in its own options list.
+  const sortOptions =
+    state === "active" ? SECTION_SORTS : SECTION_SORTS.filter((s) => s.key !== "order");
+  const isManual = state === "active" && controls.sortKey === "order";
+  const sortSelectValue =
+    state !== "active" && controls.sortKey === "order" ? sortOptions[0].key : controls.sortKey;
+
   const reorder = useReorderSections();
-  const isManual = controls.sortKey === "order";
+  const activeSection = sections.find((s) => s.id === activeSectionId) ?? null;
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -64,7 +101,7 @@ export function SectionsView() {
     router.replace(qs ? `/custom-sections?${qs}` : "/custom-sections", { scroll: false });
   }, [router, searchParams]);
 
-  if (sections.isPending) {
+  if (isPending) {
     return (
       <div role="status" aria-label="Loading custom sections" className="space-y-6">
         <Skeleton className="h-10 w-56" />
@@ -76,18 +113,15 @@ export function SectionsView() {
     );
   }
 
-  if (sections.error) {
+  if (error) {
     return (
       <ErrorState
         title="Custom sections unavailable"
-        description={sections.error.message}
-        onRetry={() => void sections.refetch()}
+        description={error.message}
+        onRetry={onRetry}
       />
     );
   }
-
-  const data = sections.data ?? [];
-  const activeSection = data.find((s) => s.id === activeSectionId) ?? null;
 
   return (
     <div className="space-y-6">
@@ -107,7 +141,9 @@ export function SectionsView() {
         </Link>
       </header>
 
-      {data.length === 0 ? (
+      <StateFilter value={state} onChange={(next) => controls.setState(next)} />
+
+      {sections.length === 0 ? (
         <EmptyState
           title="No custom sections yet"
           description="Create your first custom section to add tailored content to your portfolio."
@@ -129,8 +165,8 @@ export function SectionsView() {
               />
             )}
             <SortSelect
-              value={controls.sortKey}
-              options={SECTION_SORTS}
+              value={sortSelectValue}
+              options={sortOptions}
               onValueChange={controls.setSortKey}
             />
           </div>
@@ -144,8 +180,13 @@ export function SectionsView() {
               {(section) => (
                 <SectionCard
                   section={section}
+                  state={state}
                   onManageItems={setActiveSectionId}
-                  onDelete={setSectionToDelete}
+                  onArchive={onArchive}
+                  onUnarchive={onUnarchive}
+                  onRestore={onRestore}
+                  onSoftDelete={onSoftDelete}
+                  onPurge={(s) => setSectionToPurge(s)}
                 />
               )}
             </SortableList>
@@ -170,8 +211,13 @@ export function SectionsView() {
                   <SectionCard
                     key={section.id}
                     section={section}
+                    state={state}
                     onManageItems={setActiveSectionId}
-                    onDelete={setSectionToDelete}
+                    onArchive={onArchive}
+                    onUnarchive={onUnarchive}
+                    onRestore={onRestore}
+                    onSoftDelete={onSoftDelete}
+                    onPurge={(s) => setSectionToPurge(s)}
                   />
                 ))}
               </div>
@@ -199,14 +245,12 @@ export function SectionsView() {
       />
 
       <DeleteSectionDialog
-        section={sectionToDelete}
-        open={sectionToDelete !== null}
+        section={sectionToPurge}
+        open={sectionToPurge !== null}
         onOpenChange={(open) => {
-          if (!open) setSectionToDelete(null);
+          if (!open) setSectionToPurge(null);
         }}
-        onConfirm={async (section) => {
-          await deleteSection.mutateAsync(section.id);
-        }}
+        onConfirm={onPurge}
       />
     </div>
   );

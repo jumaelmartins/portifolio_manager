@@ -7,8 +7,6 @@ const {
   toast,
   useRouter,
   useSearchParams,
-  useSections,
-  useDeleteSection,
   useReorderSections,
   useCreateItem,
   useUpdateItem,
@@ -19,8 +17,6 @@ const {
   toast: { success: vi.fn(), error: vi.fn() },
   useRouter: vi.fn(),
   useSearchParams: vi.fn(),
-  useSections: vi.fn(),
-  useDeleteSection: vi.fn(),
   useReorderSections: vi.fn(),
   useCreateItem: vi.fn(),
   useUpdateItem: vi.fn(),
@@ -31,8 +27,6 @@ const {
 vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
 vi.mock("sonner", () => ({ toast }));
 vi.mock("../api/custom-sections-queries", () => ({
-  useSections,
-  useDeleteSection,
   useReorderSections,
   useCreateItem,
   useUpdateItem,
@@ -40,6 +34,7 @@ vi.mock("../api/custom-sections-queries", () => ({
   useReorderItems,
 }));
 
+import type { ContentState } from "@/lib/content-state";
 import type { CustomSection } from "../types";
 import { SectionsView } from "./sections-view";
 
@@ -56,18 +51,48 @@ const sections: CustomSection[] = Array.from({ length: 12 }, (_, index) => {
   };
 });
 
+function renderView({
+  search = "",
+  sections: testSections = [] as CustomSection[],
+  state = "active" as ContentState,
+  onArchive = vi.fn(),
+  onUnarchive = vi.fn(),
+  onRestore = vi.fn(),
+  onSoftDelete = vi.fn(),
+  onPurge = vi.fn(async () => {}),
+}: {
+  search?: string;
+  sections?: CustomSection[];
+  state?: ContentState;
+  onArchive?: (section: CustomSection) => void;
+  onUnarchive?: (section: CustomSection) => void;
+  onRestore?: (section: CustomSection) => void;
+  onSoftDelete?: (section: CustomSection) => void;
+  onPurge?: (section: CustomSection) => Promise<void>;
+} = {}) {
+  useSearchParams.mockReturnValue(new URLSearchParams(search));
+  const view = render(
+    <SectionsView
+      sections={testSections}
+      state={state}
+      isPending={false}
+      error={null}
+      onRetry={vi.fn()}
+      onArchive={onArchive}
+      onUnarchive={onUnarchive}
+      onRestore={onRestore}
+      onSoftDelete={onSoftDelete}
+      onPurge={onPurge}
+    />,
+  );
+  return { ...view, onArchive, onUnarchive, onRestore, onSoftDelete, onPurge };
+}
+
 describe("SectionsView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useRouter.mockReturnValue({ replace });
     useSearchParams.mockReturnValue(new URLSearchParams());
-    useSections.mockReturnValue({
-      data: sections,
-      isPending: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    useDeleteSection.mockReturnValue({ mutateAsync: vi.fn() });
     useReorderSections.mockReturnValue({ mutate: vi.fn() });
     useCreateItem.mockReturnValue({ mutateAsync: vi.fn() });
     useUpdateItem.mockReturnValue({ mutateAsync: vi.fn() });
@@ -77,8 +102,7 @@ describe("SectionsView", () => {
 
   it("paginates sections and moves to page 2", async () => {
     const user = userEvent.setup();
-    useSearchParams.mockReturnValue(new URLSearchParams("sort=name-asc"));
-    render(<SectionsView />);
+    renderView({ search: "sort=name-asc", sections });
 
     expect(screen.getByText("Showing 1–10 of 12")).toBeInTheDocument();
     expect(screen.getByText("Section 01")).toBeInTheDocument();
@@ -94,8 +118,7 @@ describe("SectionsView", () => {
 
   it("searches sections and writes ?q=", async () => {
     const user = userEvent.setup();
-    useSearchParams.mockReturnValue(new URLSearchParams("sort=name-asc"));
-    render(<SectionsView />);
+    renderView({ search: "sort=name-asc", sections });
 
     await user.type(screen.getByRole("searchbox"), "Section 03");
     expect(screen.getByText("Showing 1–1 of 1")).toBeInTheDocument();
@@ -105,17 +128,60 @@ describe("SectionsView", () => {
   });
 
   it("renders draggable section cards by default (manual order) and hides search", () => {
-    render(<SectionsView />);
+    renderView({ sections });
 
     expect(screen.queryByPlaceholderText("Search sections...")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^Reorder / }).length).toBe(sections.length);
   });
 
   it("switching to Name A–Z shows search and the paginated grid (no drag handles)", () => {
-    useSearchParams.mockReturnValue(new URLSearchParams("sort=name-asc"));
-    render(<SectionsView />);
+    renderView({ search: "sort=name-asc", sections });
 
     expect(screen.getByPlaceholderText("Search sections...")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Reorder / })).not.toBeInTheDocument();
+  });
+
+  it("renders a StateFilter tablist", () => {
+    renderView({ sections });
+    expect(screen.getByRole("tablist", { name: "Content state" })).toBeInTheDocument();
+  });
+
+  it("in active state, a card shows an Archive button that calls onArchive", async () => {
+    const user = userEvent.setup();
+    const { onArchive } = renderView({ sections, state: "active" });
+
+    await user.click(screen.getByRole("button", { name: "Archive Section 01" }));
+    expect(onArchive).toHaveBeenCalledWith(expect.objectContaining({ name: "Section 01" }));
+  });
+
+  it("in trash state: no Manual order sort option, no drag handles, Restore and Delete…permanently shown", () => {
+    renderView({ sections, state: "trash" });
+
+    expect(screen.queryByText("Manual order")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Reorder / })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Restore /}).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: /permanently$/ }).length).toBeGreaterThan(0);
+  });
+
+  it("in trash state, clicking Delete…permanently opens the confirm dialog and confirming calls onPurge", async () => {
+    const user = userEvent.setup();
+    const onPurge = vi.fn(async () => {});
+    renderView({ sections: [sections[0]], state: "trash", onPurge });
+
+    await user.click(screen.getByRole("button", { name: /permanently$/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Delete section" }));
+    expect(onPurge).toHaveBeenCalledWith(expect.objectContaining({ name: "Section 01" }));
+  });
+
+  it("in active state, clicking the trash icon calls onSoftDelete directly (no dialog)", async () => {
+    const user = userEvent.setup();
+    const onSoftDelete = vi.fn();
+    renderView({ sections: [sections[0]], state: "active", onSoftDelete });
+
+    await user.click(screen.getByRole("button", { name: "Move Section 01 to trash" }));
+    expect(onSoftDelete).toHaveBeenCalledWith(expect.objectContaining({ name: "Section 01" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
