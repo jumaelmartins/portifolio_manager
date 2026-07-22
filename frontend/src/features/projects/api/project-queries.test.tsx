@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { updateProject, uploadImage } = vi.hoisted(() => ({
   updateProject: vi.fn(),
@@ -15,6 +15,11 @@ vi.mock("./project-api", async (importOriginal) => {
 
 import {
   projectKeys,
+  useArchiveProject,
+  usePurgeProject,
+  useRestoreProject,
+  useProjects,
+  useUnarchiveProject,
   useUpdateProject,
   useUploadImage,
 } from "./project-queries";
@@ -90,5 +95,97 @@ describe("project queries", () => {
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: projectKeys.images });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
+  });
+
+  it("points the reorder mutation at the active-state query key", () => {
+    expect([...projectKeys.all, "active"]).toEqual(["projects", "active"]);
+  });
+});
+
+describe("project state queries", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("[]", { status: 200 })),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function wrapper() {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    return ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+  }
+
+  it("fetches the active state by default", async () => {
+    renderHook(() => useProjects(), { wrapper: wrapper() });
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith("/api/projects", expect.anything()),
+    );
+  });
+
+  it("fetches archived state", async () => {
+    renderHook(() => useProjects("archived"), { wrapper: wrapper() });
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/projects?state=archived",
+        expect.anything(),
+      ),
+    );
+  });
+
+  it("archive hits the archive route", async () => {
+    const { result } = renderHook(() => useArchiveProject(), {
+      wrapper: wrapper(),
+    });
+    result.current.mutate(7);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/projects/7/archive",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+  });
+
+  it("unarchive hits the unarchive route", async () => {
+    const { result } = renderHook(() => useUnarchiveProject(), {
+      wrapper: wrapper(),
+    });
+    result.current.mutate(7);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/projects/7/unarchive",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+  });
+
+  it("restore hits the restore route", async () => {
+    const { result } = renderHook(() => useRestoreProject(), {
+      wrapper: wrapper(),
+    });
+    result.current.mutate(7);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/projects/7/restore",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+  });
+
+  it("purge hits the purge route", async () => {
+    const { result } = renderHook(() => usePurgeProject(), {
+      wrapper: wrapper(),
+    });
+    result.current.mutate(7);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/projects/7/purge",
+        expect.objectContaining({ method: "DELETE" }),
+      ),
+    );
   });
 });

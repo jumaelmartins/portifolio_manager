@@ -6,8 +6,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import type { ContentState } from "@/lib/content-state";
 import type { Project, ProjectInput } from "../types";
 import {
+  archiveProject,
   createProject,
   deleteImage,
   deleteProject,
@@ -16,7 +18,10 @@ import {
   getProject,
   getProjects,
   getTechnologies,
+  purgeProject,
   reorderProjects,
+  restoreProject,
+  unarchiveProject,
   updateProject,
   uploadImage,
 } from "./project-api";
@@ -31,10 +36,10 @@ export const projectKeys = {
   images: ["images"] as const,
 };
 
-export function useProjects() {
+export function useProjects(state: ContentState = "active") {
   return useQuery({
-    queryKey: projectKeys.all,
-    queryFn: getProjects,
+    queryKey: [...projectKeys.all, state],
+    queryFn: () => getProjects(state),
   });
 }
 
@@ -141,8 +146,36 @@ export function useDeleteImage() {
 
 export function useReorderProjects() {
   return useReorder<Project[]>({
-    queryKey: projectKeys.all,
+    queryKey: [...projectKeys.all, "active"],
     mutationFn: reorderProjects,
     applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
+}
+
+function useProjectTransition(
+  mutationFn: (id: number) => Promise<{ id: number }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: projectKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveProject() {
+  return useProjectTransition(archiveProject);
+}
+export function useUnarchiveProject() {
+  return useProjectTransition(unarchiveProject);
+}
+export function useRestoreProject() {
+  return useProjectTransition(restoreProject);
+}
+export function usePurgeProject() {
+  return useProjectTransition(purgeProject);
 }

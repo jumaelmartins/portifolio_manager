@@ -1,4 +1,5 @@
 import type { ApiError } from "@/lib/api/types";
+import type { ContentState } from "@/lib/content-state";
 import type {
   CategoryOption,
   ImageOption,
@@ -45,8 +46,9 @@ export async function requestJson<T>(
   return payload as T;
 }
 
-export function getProjects() {
-  return requestJson<Project[]>("/api/projects");
+export function getProjects(state: ContentState = "active") {
+  const suffix = state === "active" ? "" : `?state=${state}`;
+  return requestJson<Project[]>(`/api/projects${suffix}`);
 }
 
 export function getProject(id: number) {
@@ -77,6 +79,30 @@ export function reorderProjects(ids: number[]) {
   return requestJson<Project[]>("/api/projects/reorder", {
     method: "PATCH",
     body: JSON.stringify({ ids }),
+  });
+}
+
+export function archiveProject(id: number) {
+  return requestJson<{ id: number }>(`/api/projects/${id}/archive`, {
+    method: "PATCH",
+  });
+}
+
+export function unarchiveProject(id: number) {
+  return requestJson<{ id: number }>(`/api/projects/${id}/unarchive`, {
+    method: "PATCH",
+  });
+}
+
+export function restoreProject(id: number) {
+  return requestJson<{ id: number }>(`/api/projects/${id}/restore`, {
+    method: "PATCH",
+  });
+}
+
+export function purgeProject(id: number) {
+  return requestJson<{ id: number }>(`/api/projects/${id}/purge`, {
+    method: "DELETE",
   });
 }
 
