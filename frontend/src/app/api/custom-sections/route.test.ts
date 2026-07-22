@@ -28,9 +28,24 @@ describe("/api/custom-sections", () => {
 
   it("passes the section list through from the backend", async () => {
     backendFetch.mockResolvedValue(Response.json([{ id: 1, name: "Awards" }]));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/custom-sections"));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([{ id: 1, name: "Awards" }]);
+    expect(backendFetch).toHaveBeenCalledWith("/custom-sections");
+  });
+
+  it("forwards a non-active state to the backend", async () => {
+    backendFetch.mockResolvedValue(Response.json([{ id: 1, name: "Awards" }]));
+    const response = await GET(
+      new Request("http://localhost/api/custom-sections?state=archived"),
+    );
+    expect(response.status).toBe(200);
+    expect(backendFetch).toHaveBeenCalledWith("/custom-sections?state=archived");
+  });
+
+  it("omits the state query when state is active", async () => {
+    backendFetch.mockResolvedValue(Response.json([{ id: 1, name: "Awards" }]));
+    await GET(new Request("http://localhost/api/custom-sections?state=active"));
     expect(backendFetch).toHaveBeenCalledWith("/custom-sections");
   });
 

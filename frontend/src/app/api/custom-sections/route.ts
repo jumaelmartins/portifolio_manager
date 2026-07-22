@@ -7,8 +7,10 @@ import { backendFetch } from "@/lib/api/backend";
 import { toBffResponse } from "@/lib/api/bff";
 import { revalidatePortfolio } from "@/lib/api/revalidate";
 
-export async function GET() {
-  return toBffResponse(await backendFetch("/custom-sections"));
+export async function GET(request: Request) {
+  const state = new URL(request.url).searchParams.get("state");
+  const suffix = state && state !== "active" ? `?state=${state}` : "";
+  return toBffResponse(await backendFetch(`/custom-sections${suffix}`));
 }
 
 export async function POST(request: Request) {
