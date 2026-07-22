@@ -1,12 +1,18 @@
 "use client";
 
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
+import { parseContentState } from "@/lib/content-state";
 import {
+  useArchiveProject,
   useCategories,
   useDeleteProject,
   useProjects,
+  usePurgeProject,
+  useRestoreProject,
   useTechnologies,
+  useUnarchiveProject,
 } from "@/features/projects/api/project-queries";
 import { ProjectsView } from "@/features/projects/components/projects-view";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,10 +33,17 @@ export default function ProjectsPage() {
 }
 
 function ProjectsPageContent() {
-  const projects = useProjects();
+  const searchParams = useSearchParams();
+  const state = parseContentState(searchParams.get("state"));
+
+  const projects = useProjects(state);
   const categories = useCategories();
   const technologies = useTechnologies();
-  const deleteProject = useDeleteProject();
+  const softDelete = useDeleteProject();
+  const archive = useArchiveProject();
+  const unarchive = useUnarchiveProject();
+  const restore = useRestoreProject();
+  const purge = usePurgeProject();
   const error = projects.error || categories.error || technologies.error;
 
   return (
@@ -38,6 +51,7 @@ function ProjectsPageContent() {
       projects={projects.data ?? []}
       categories={categories.data ?? []}
       technologies={technologies.data ?? []}
+      state={state}
       isPending={
         projects.isPending || categories.isPending || technologies.isPending
       }
@@ -49,8 +63,12 @@ function ProjectsPageContent() {
           technologies.refetch(),
         ]);
       }}
-      onDelete={async (project) => {
-        await deleteProject.mutateAsync(project.id);
+      onArchive={(project) => archive.mutate(project.id)}
+      onUnarchive={(project) => unarchive.mutate(project.id)}
+      onRestore={(project) => restore.mutate(project.id)}
+      onSoftDelete={(project) => softDelete.mutate(project.id)}
+      onPurge={async (project) => {
+        await purge.mutateAsync(project.id);
       }}
     />
   );

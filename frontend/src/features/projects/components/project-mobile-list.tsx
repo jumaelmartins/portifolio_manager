@@ -1,21 +1,30 @@
 import { format } from "date-fns";
-import { ImageIcon, Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { ImageIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { ContentRowActions } from "@/components/ui/content-row-actions";
+import type { ContentState } from "@/lib/content-state";
 import type { Project } from "../types";
 
 type ProjectMobileListProps = {
   projects: Project[];
-  onDelete: (project: Project) => void;
+  state: ContentState;
+  onArchive: (project: Project) => void;
+  onUnarchive: (project: Project) => void;
+  onRestore: (project: Project) => void;
+  onSoftDelete: (project: Project) => void;
+  onPurge: (project: Project) => void;
 };
 
 export function ProjectMobileList({
   projects,
-  onDelete,
+  state,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
 }: ProjectMobileListProps) {
   return (
     <div className="grid gap-3 md:hidden">
@@ -57,27 +66,16 @@ export function ProjectMobileList({
               <span className="text-xs text-muted-foreground">
                 Updated {format(new Date(project.updatedAt), "MMM d, yyyy")}
               </span>
-              <div className="flex gap-1">
-                <Link
-                  href={`/projects/${project.id}/edit`}
-                  aria-label={`Edit ${project.title}`}
-                  className={cn(
-                    buttonVariants({ variant: "ghost", size: "icon" }),
-                  )}
-                >
-                  <Pencil />
-                </Link>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Delete ${project.title}`}
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => onDelete(project)}
-                >
-                  <Trash2 />
-                </Button>
-              </div>
+              <ContentRowActions
+                state={state}
+                label={project.title}
+                editHref={`/projects/${project.id}/edit`}
+                onArchive={() => onArchive(project)}
+                onUnarchive={() => onUnarchive(project)}
+                onRestore={() => onRestore(project)}
+                onSoftDelete={() => onSoftDelete(project)}
+                onPurge={() => onPurge(project)}
+              />
             </div>
           </CardContent>
         </Card>

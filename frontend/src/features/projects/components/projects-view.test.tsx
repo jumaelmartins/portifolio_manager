@@ -75,10 +75,15 @@ describe("ProjectsView", () => {
           { id: 2, name: "TypeScript" },
           { id: 4, name: "PostgreSQL" },
         ]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
 
@@ -118,10 +123,15 @@ describe("ProjectsView", () => {
         projects={projects}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
 
@@ -145,10 +155,15 @@ describe("ProjectsView", () => {
         projects={[]}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
 
@@ -161,10 +176,15 @@ describe("ProjectsView", () => {
         projects={[]}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={new Error("Projects request failed")}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
     expect(
@@ -176,10 +196,15 @@ describe("ProjectsView", () => {
         projects={[]}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
     expect(
@@ -198,10 +223,15 @@ describe("ProjectsView", () => {
         projects={[]}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
 
@@ -213,25 +243,140 @@ describe("ProjectsView", () => {
     expect(replace).toHaveBeenCalledWith("/projects", { scroll: false });
   });
 
-  it("confirms deletion and closes the dialog on success", async () => {
+  it("renders a StateFilter tablist", () => {
+    renderWithProviders(
+      <ProjectsView
+        projects={projects}
+        categories={[]}
+        technologies={[]}
+        state="active"
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
+      />,
+    );
+    expect(screen.getByRole("tablist", { name: "Content state" })).toBeInTheDocument();
+  });
+
+  it("in active state, a row shows an Archive button that calls onArchive", async () => {
     const user = userEvent.setup();
-    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const onArchive = vi.fn();
 
     renderWithProviders(
       <ProjectsView
         projects={projects}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={onDelete}
+        onArchive={onArchive}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
+      />,
+    );
+
+    const table = screen.getByRole("table");
+    const row = within(table).getByText("Portfolio Manager").closest("tr");
+    expect(row).not.toBeNull();
+    await user.click(
+      within(row as HTMLElement).getByRole("button", {
+        name: "Archive Portfolio Manager",
+      }),
+    );
+    expect(onArchive).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Portfolio Manager" }),
+    );
+  });
+
+  it("hides the project summary and category/technology filters outside Active, but keeps search available", () => {
+    renderWithProviders(
+      <ProjectsView
+        projects={projects}
+        categories={[{ id: 3, name: "Full Stack" }]}
+        technologies={[{ id: 2, name: "TypeScript" }]}
+        state="archived"
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("region", { name: "Project summary" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Category" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Technology" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("searchbox")).toBeInTheDocument();
+  });
+
+  it("in trash state, a row shows Restore and Delete…permanently, and no Manual order sort option", () => {
+    renderWithProviders(
+      <ProjectsView
+        projects={projects}
+        categories={[]}
+        technologies={[]}
+        state="trash"
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
+      />,
+    );
+
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByRole("button", { name: /^Restore /}).length).toBeGreaterThan(0);
+    expect(within(table).getAllByRole("button", { name: /permanently$/ }).length).toBeGreaterThan(0);
+
+    // No "Manual order" option in the sort select while in trash.
+    expect(screen.queryByText("Manual order")).not.toBeInTheDocument();
+  });
+
+  it("confirms purge and closes the dialog on success", async () => {
+    const user = userEvent.setup();
+    const onPurge = vi.fn().mockResolvedValue(undefined);
+
+    renderWithProviders(
+      <ProjectsView
+        projects={projects}
+        categories={[]}
+        technologies={[]}
+        state="trash"
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={onPurge}
       />,
     );
 
     await user.click(
       within(screen.getByRole("table")).getByRole("button", {
-        name: "Delete Portfolio Manager",
+        name: "Delete Portfolio Manager permanently",
       }),
     );
     expect(
@@ -239,7 +384,7 @@ describe("ProjectsView", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Delete project" }));
 
-    expect(onDelete).toHaveBeenCalledWith(projects[0]);
+    expect(onPurge).toHaveBeenCalledWith(projects[0]);
     await waitFor(() =>
       expect(
         screen.queryByRole("heading", { name: "Delete Portfolio Manager?" }),
@@ -248,9 +393,9 @@ describe("ProjectsView", () => {
     expect(toast.success).toHaveBeenCalledWith("Project deleted");
   });
 
-  it("keeps the deletion dialog open when the request fails", async () => {
+  it("keeps the purge dialog open when the request fails", async () => {
     const user = userEvent.setup();
-    const onDelete = vi.fn().mockRejectedValue({
+    const onPurge = vi.fn().mockRejectedValue({
       message: "Project could not be deleted",
     });
 
@@ -259,16 +404,21 @@ describe("ProjectsView", () => {
         projects={projects}
         categories={[]}
         technologies={[]}
+        state="trash"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={onDelete}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={onPurge}
       />,
     );
 
     await user.click(
       within(screen.getByRole("table")).getByRole("button", {
-        name: "Delete Portfolio Manager",
+        name: "Delete Portfolio Manager permanently",
       }),
     );
     await user.click(screen.getByRole("button", { name: "Delete project" }));
@@ -292,10 +442,15 @@ describe("ProjectsView", () => {
         projects={projects}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
 
@@ -311,10 +466,15 @@ describe("ProjectsView", () => {
         projects={projects}
         categories={[]}
         technologies={[]}
+        state="active"
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        onUnarchive={vi.fn()}
+        onRestore={vi.fn()}
+        onSoftDelete={vi.fn()}
+        onPurge={vi.fn(async () => {})}
       />,
     );
 

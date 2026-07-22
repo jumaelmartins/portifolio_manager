@@ -14,8 +14,10 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
 import { SortableList } from "@/components/ui/sortable-list";
+import { StateFilter } from "@/components/ui/state-filter";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
+import type { ContentState } from "@/lib/content-state";
 import { cn } from "@/lib/utils";
 import type { CategoryOption, Project, TechnologyOption } from "../types";
 import { useReorderProjects } from "../api/project-queries";
@@ -29,10 +31,15 @@ type ProjectsViewProps = {
   projects: Project[];
   categories: CategoryOption[];
   technologies: TechnologyOption[];
+  state: ContentState;
   isPending: boolean;
   error: Error | null;
   onRetry: () => void;
-  onDelete: (project: Project) => Promise<void>;
+  onArchive: (project: Project) => void;
+  onUnarchive: (project: Project) => void;
+  onRestore: (project: Project) => void;
+  onSoftDelete: (project: Project) => void;
+  onPurge: (project: Project) => Promise<void>;
 };
 
 const PROJECT_SORTS: SortOption<Project>[] = [
@@ -75,14 +82,19 @@ export function ProjectsView({
   projects,
   categories,
   technologies,
+  state,
   isPending,
   error,
   onRetry,
-  onDelete,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
 }: ProjectsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [projectToPurge, setProjectToPurge] = useState<Project | null>(null);
 
   const controls = useListControls<Project>({
     items: projects,
@@ -90,6 +102,7 @@ export function ProjectsView({
     searchAccessor: (project) => `${project.title} ${project.description}`,
     sorts: PROJECT_SORTS,
     extraParamKeys: ["category", "technology"],
+    defaultState: "active",
     predicate: (project, { getParam }) => {
       const categoryId = positiveOption(getParam("category"), categories);
       const technologyId = positiveOption(getParam("technology"), technologies);
@@ -101,8 +114,10 @@ export function ProjectsView({
       return matchesCategory && matchesTechnology;
     },
   });
+  const sortOptions =
+    state === "active" ? PROJECT_SORTS : PROJECT_SORTS.filter((s) => s.key !== "order");
+  const isManual = state === "active" && controls.sortKey === "order";
   const reorder = useReorderProjects();
-  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -165,6 +180,8 @@ export function ProjectsView({
         </Link>
       </header>
 
+      <StateFilter value={state} onChange={(next) => controls.setState(next)} />
+
       {projects.length === 0 ? (
         <EmptyState
           title="No projects yet"
@@ -178,7 +195,9 @@ export function ProjectsView({
         />
       ) : (
         <>
-          <ProjectSummary projects={projects} />
+          {state === "active" && !isManual ? (
+            <ProjectSummary projects={projects} />
+          ) : null}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             {!isManual && (
               <SearchInput
@@ -189,10 +208,10 @@ export function ProjectsView({
             )}
             <SortSelect
               value={controls.sortKey}
-              options={PROJECT_SORTS}
+              options={sortOptions}
               onValueChange={controls.setSortKey}
             />
-            {!isManual && (
+            {state === "active" && !isManual && (
               <ProjectFilters
                 categoryId={selectedCategory}
                 technologyId={selectedTechnology}
@@ -251,11 +270,21 @@ export function ProjectsView({
             <>
               <ProjectTable
                 projects={controls.pageItems}
-                onDelete={setProjectToDelete}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(project) => setProjectToPurge(project)}
               />
               <ProjectMobileList
                 projects={controls.pageItems}
-                onDelete={setProjectToDelete}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(project) => setProjectToPurge(project)}
               />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
@@ -274,14 +303,14 @@ export function ProjectsView({
       )}
 
       <DeleteProjectDialog
-        project={projectToDelete}
-        open={projectToDelete !== null}
+        project={projectToPurge}
+        open={projectToPurge !== null}
         onOpenChange={(open) => {
           if (!open) {
-            setProjectToDelete(null);
+            setProjectToPurge(null);
           }
         }}
-        onConfirm={onDelete}
+        onConfirm={onPurge}
       />
     </div>
   );
