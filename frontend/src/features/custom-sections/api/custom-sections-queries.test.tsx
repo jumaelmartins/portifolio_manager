@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { createSection, createItem } = vi.hoisted(() => ({
   createSection: vi.fn(),
@@ -15,8 +15,10 @@ vi.mock("./custom-sections-api", async (importOriginal) => {
 
 import {
   customSectionKeys,
+  useArchiveSection,
   useCreateSection,
   useCreateItem,
+  useSections,
 } from "./custom-sections-queries";
 
 describe("custom section queries", () => {
@@ -79,5 +81,45 @@ describe("custom section queries", () => {
     });
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: customSectionKeys.all });
+  });
+});
+
+describe("state-aware sections query + transitions", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("[]", { status: 200 })),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function wrapper() {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    return ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+  }
+
+  it("useSections fetches the archived state and keys the query by state", async () => {
+    renderHook(() => useSections("archived"), { wrapper: wrapper() });
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/custom-sections?state=archived",
+        expect.anything(),
+      ),
+    );
+  });
+
+  it("useArchiveSection hits the archive route", async () => {
+    const { result } = renderHook(() => useArchiveSection(), { wrapper: wrapper() });
+    result.current.mutate(9);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/custom-sections/9/archive",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
   });
 });

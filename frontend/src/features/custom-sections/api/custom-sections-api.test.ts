@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { requestJson, fetchSections } from "./custom-sections-api";
+import { archiveSection, fetchSections, purgeSection, requestJson } from "./custom-sections-api";
 import type { BackendCustomSection } from "../types";
 
 describe("requestJson", () => {
@@ -83,5 +83,54 @@ describe("fetchSections", () => {
     expect(section.items).toHaveLength(1);
     expect(section.items[0].sectionId).toBe(42);
     expect(section.items[0].data).toEqual({ company: "Acme" });
+  });
+
+  it("appends ?state= for non-active states", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchSections("trash");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/custom-sections?state=trash",
+      expect.anything(),
+    );
+  });
+
+  it("omits the state query param for the active state", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchSections("active");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/custom-sections", expect.anything());
+  });
+});
+
+describe("section transitions", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("archiveSection hits the archive route", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: 5 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(archiveSection(5)).resolves.toEqual({ id: 5 });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/custom-sections/5/archive",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+  });
+
+  it("purgeSection hits the purge route with DELETE", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: 5 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(purgeSection(5)).resolves.toEqual({ id: 5 });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/custom-sections/5/purge",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 });

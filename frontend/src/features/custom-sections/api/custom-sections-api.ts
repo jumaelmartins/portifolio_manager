@@ -1,4 +1,5 @@
 import type { ApiError } from "@/lib/api/types";
+import type { ContentState } from "@/lib/content-state";
 import { normalizeSection } from "../server/normalize-custom-sections";
 import type {
   BackendCustomSection,
@@ -24,8 +25,9 @@ export async function requestJson<T>(input: RequestInfo | URL, init: RequestInit
   return payload as T;
 }
 
-export async function fetchSections(): Promise<CustomSection[]> {
-  const data = await requestJson<BackendCustomSection[]>("/api/custom-sections");
+export async function fetchSections(state: ContentState = "active"): Promise<CustomSection[]> {
+  const suffix = state === "active" ? "" : `?state=${state}`;
+  const data = await requestJson<BackendCustomSection[]>(`/api/custom-sections${suffix}`);
   return data.map(normalizeSection);
 }
 
@@ -47,6 +49,22 @@ export async function updateSection(id: number, input: CustomSectionInput): Prom
 
 export function deleteSection(id: number): Promise<{ id: number }> {
   return requestJson<{ id: number }>(`/api/custom-sections/${id}`, { method: "DELETE" });
+}
+
+export function archiveSection(id: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/${id}/archive`, { method: "PATCH" });
+}
+
+export function unarchiveSection(id: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/${id}/unarchive`, { method: "PATCH" });
+}
+
+export function restoreSection(id: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/${id}/restore`, { method: "PATCH" });
+}
+
+export function purgeSection(id: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/${id}/purge`, { method: "DELETE" });
 }
 
 export async function createItem(sectionId: number, input: CustomItemInput): Promise<void> {
