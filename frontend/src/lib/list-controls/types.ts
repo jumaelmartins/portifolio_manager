@@ -15,6 +15,7 @@ export type ListControlsConfig<T> = {
     params: { getParam: (key: string) => string | null },
   ) => boolean;
   extraParamKeys?: string[];
+  defaultState?: string;
 };
 
 export type ListControlsResult<T> = {
@@ -34,4 +35,6 @@ export type ListControlsResult<T> = {
   setParam: (key: string, value: string | null) => void;
   goToPage: (page: number) => void;
   reset: () => void;
+  state: string;
+  setState: (value: string) => void;
 };

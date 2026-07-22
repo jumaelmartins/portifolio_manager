@@ -119,6 +119,33 @@ describe("useListControls", () => {
     expect(replace).toHaveBeenLastCalledWith("/things", { scroll: false });
   });
 
+  it("manages a state dimension when defaultState is set", () => {
+    useSearchParams.mockReturnValue(new URLSearchParams(""));
+    const { result } = renderHook(() =>
+      useListControls<Row>({
+        items: rows,
+        basePath: "/experience",
+        searchAccessor: (row) => row.title,
+        sorts: SORTS,
+        defaultState: "active",
+      }),
+    );
+
+    expect(result.current.state).toBe("active");
+
+    act(() => result.current.goToPage(2));
+    act(() => result.current.setState("archived"));
+
+    expect(result.current.state).toBe("archived");
+    expect(result.current.page).toBe(1);
+    expect(replace).toHaveBeenLastCalledWith("/experience?state=archived", {
+      scroll: false,
+    });
+
+    act(() => result.current.setState("active"));
+    expect(replace).toHaveBeenLastCalledWith("/experience", { scroll: false });
+  });
+
   it("exposes sortedItems as the full set, ignoring search and pagination", () => {
     const { result } = setup("q=Item+01&page=2");
     // search matches 1 row, but sortedItems must still hold all 12

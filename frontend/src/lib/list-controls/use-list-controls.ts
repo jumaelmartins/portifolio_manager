@@ -12,6 +12,7 @@ type ControlState = {
   sortKey: string;
   page: number;
   extras: Record<string, string>;
+  state: string;
 };
 
 function readState(
@@ -19,6 +20,7 @@ function readState(
   sortKeys: string[],
   defaultSortKey: string,
   extraParamKeys: string[],
+  defaultState: string | undefined,
 ): ControlState {
   const rawSort = searchParams.get("sort");
   const rawPage = Number(searchParams.get("page"));
@@ -32,6 +34,10 @@ function readState(
     sortKey: rawSort && sortKeys.includes(rawSort) ? rawSort : defaultSortKey,
     page: Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1,
     extras,
+    state:
+      defaultState === undefined
+        ? ""
+        : (searchParams.get("state") ?? defaultState),
   };
 }
 
@@ -46,6 +52,7 @@ export function useListControls<T>(
     pageSize = DEFAULT_PAGE_SIZE,
     predicate,
     extraParamKeys = [],
+    defaultState,
   } = config;
 
   const router = useRouter();
@@ -53,12 +60,12 @@ export function useListControls<T>(
   const sortKeys = sorts.map((sort) => sort.key);
   const defaultSortKey = sorts[0].key;
 
-  const [state, setState] = useState<ControlState>(() =>
-    readState(searchParams, sortKeys, defaultSortKey, extraParamKeys),
+  const [controlState, setControlState] = useState<ControlState>(() =>
+    readState(searchParams, sortKeys, defaultSortKey, extraParamKeys, defaultState),
   );
 
   function getParam(key: string): string | null {
-    return state.extras[key] ?? null;
+    return controlState.extras[key] ?? null;
   }
 
   function writeUrl(next: ControlState) {
@@ -71,17 +78,20 @@ export function useListControls<T>(
       const value = next.extras[key];
       if (value) params.set(key, value);
     }
+    if (defaultState !== undefined && next.state && next.state !== defaultState) {
+      params.set("state", next.state);
+    }
     const qs = params.toString();
     router.replace(qs ? `${basePath}?${qs}` : basePath, { scroll: false });
   }
 
   function update(partial: Partial<ControlState>, resetPage: boolean) {
     const next: ControlState = {
-      ...state,
+      ...controlState,
       ...partial,
-      page: resetPage ? 1 : partial.page ?? state.page,
+      page: resetPage ? 1 : partial.page ?? controlState.page,
     };
-    setState(next);
+    setControlState(next);
     writeUrl(next);
   }
 
@@ -93,8 +103,12 @@ export function useListControls<T>(
     update({ sortKey: key }, true);
   }
 
+  function setState(value: string) {
+    update({ state: value, sortKey: defaultSortKey }, true);
+  }
+
   function setParam(key: string, value: string | null) {
-    const extras = { ...state.extras };
+    const extras = { ...controlState.extras };
     if (value === null || value === "") {
       delete extras[key];
     } else {
@@ -112,8 +126,8 @@ export function useListControls<T>(
   }
 
   const activeSort =
-    sorts.find((sort) => sort.key === state.sortKey) ?? sorts[0];
-  const needle = state.query.trim().toLocaleLowerCase();
+    sorts.find((sort) => sort.key === controlState.sortKey) ?? sorts[0];
+  const needle = controlState.query.trim().toLocaleLowerCase();
   const filtered = items.filter((item) => {
     const matchesQuery =
       needle === "" ||
@@ -126,7 +140,7 @@ export function useListControls<T>(
   const sortedItems = [...items].sort(activeSort.compare);
   const totalFiltered = sorted.length;
   const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
-  const page = Math.min(Math.max(1, state.page), pageCount);
+  const page = Math.min(Math.max(1, controlState.page), pageCount);
   const start = (page - 1) * pageSize;
   const pageItems = sorted.slice(start, start + pageSize);
   const rangeStart = totalFiltered === 0 ? 0 : start + 1;
@@ -141,13 +155,15 @@ export function useListControls<T>(
     rangeEnd,
     page,
     pageCount,
-    query: state.query,
+    query: controlState.query,
     setQuery,
-    sortKey: state.sortKey,
+    sortKey: controlState.sortKey,
     setSortKey,
     getParam,
     setParam,
     goToPage,
     reset,
+    state: controlState.state,
+    setState,
   };
 }
