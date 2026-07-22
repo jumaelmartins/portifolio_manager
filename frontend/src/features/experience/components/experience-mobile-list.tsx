@@ -1,19 +1,30 @@
 import { format } from "date-fns";
-import { Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { ContentRowActions } from "@/components/ui/content-row-actions";
+import type { ContentState } from "@/lib/content-state";
 import type { ExperienceEntry } from "../types";
 
 type ExperienceMobileListProps = {
   entries: ExperienceEntry[];
-  onDelete: (entry: ExperienceEntry) => void;
+  state: ContentState;
+  onArchive: (entry: ExperienceEntry) => void;
+  onUnarchive: (entry: ExperienceEntry) => void;
+  onRestore: (entry: ExperienceEntry) => void;
+  onSoftDelete: (entry: ExperienceEntry) => void;
+  onPurge: (entry: ExperienceEntry) => void;
 };
 
-export function ExperienceMobileList({ entries, onDelete }: ExperienceMobileListProps) {
+export function ExperienceMobileList({
+  entries,
+  state,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
+}: ExperienceMobileListProps) {
   return (
     <div className="grid gap-3 md:hidden">
       {entries.map((entry) => (
@@ -31,24 +42,17 @@ export function ExperienceMobileList({ entries, onDelete }: ExperienceMobileList
                   </span>
                 </div>
               </div>
-              <div className="flex shrink-0 gap-1">
-                <Link
-                  href={`/experience/${entry.id}/edit`}
-                  aria-label={`Edit ${entry.title}`}
-                  className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-                >
-                  <Pencil />
-                </Link>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Delete ${entry.title}`}
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => onDelete(entry)}
-                >
-                  <Trash2 />
-                </Button>
+              <div className="shrink-0">
+                <ContentRowActions
+                  state={state}
+                  label={entry.title}
+                  editHref={`/experience/${entry.id}/edit`}
+                  onArchive={() => onArchive(entry)}
+                  onUnarchive={() => onUnarchive(entry)}
+                  onRestore={() => onRestore(entry)}
+                  onSoftDelete={() => onSoftDelete(entry)}
+                  onPurge={() => onPurge(entry)}
+                />
               </div>
             </div>
           </CardContent>

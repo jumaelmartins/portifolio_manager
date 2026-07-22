@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { SortableList } from "@/components/ui/sortable-list";
+import { StateFilter } from "@/components/ui/state-filter";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
@@ -17,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
+import type { ContentState } from "@/lib/content-state";
 import type { ExperienceEntry } from "../types";
 import { useReorderExperiences } from "../api/experience-queries";
 import { DeleteExperienceDialog } from "./delete-experience-dialog";
@@ -25,10 +27,15 @@ import { ExperienceTable } from "./experience-table";
 
 type ExperienceViewProps = {
   entries: ExperienceEntry[];
+  state: ContentState;
   isPending: boolean;
   error: Error | null;
   onRetry: () => void;
-  onDelete: (entry: ExperienceEntry) => Promise<void>;
+  onArchive: (entry: ExperienceEntry) => void;
+  onUnarchive: (entry: ExperienceEntry) => void;
+  onRestore: (entry: ExperienceEntry) => void;
+  onSoftDelete: (entry: ExperienceEntry) => void;
+  onPurge: (entry: ExperienceEntry) => Promise<void>;
 };
 
 const EXPERIENCE_SORTS: SortOption<ExperienceEntry>[] = [
@@ -52,24 +59,33 @@ function ExperienceSkeleton() {
 
 export function ExperienceView({
   entries,
+  state,
   isPending,
   error,
   onRetry,
-  onDelete,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
 }: ExperienceViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [entryToDelete, setEntryToDelete] = useState<ExperienceEntry | null>(null);
+  const [entryToPurge, setEntryToPurge] = useState<ExperienceEntry | null>(null);
 
   const controls = useListControls<ExperienceEntry>({
     items: entries,
     basePath: "/experience",
     searchAccessor: (entry) => `${entry.title} ${entry.companyName}`,
     sorts: EXPERIENCE_SORTS,
+    defaultState: "active",
   });
 
+  const sortOptions =
+    state === "active" ? EXPERIENCE_SORTS : EXPERIENCE_SORTS.filter((s) => s.key !== "order");
+  const isManual = state === "active" && controls.sortKey === "order";
+
   const reorder = useReorderExperiences();
-  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -112,6 +128,8 @@ export function ExperienceView({
         </Link>
       </header>
 
+      <StateFilter value={state} onChange={(next) => controls.setState(next)} />
+
       {entries.length === 0 ? (
         <EmptyState
           title="No experience yet"
@@ -135,7 +153,7 @@ export function ExperienceView({
             )}
             <SortSelect
               value={controls.sortKey}
-              options={EXPERIENCE_SORTS}
+              options={sortOptions}
               onValueChange={controls.setSortKey}
             />
           </div>
@@ -179,8 +197,24 @@ export function ExperienceView({
             />
           ) : (
             <>
-              <ExperienceTable entries={controls.pageItems} onDelete={setEntryToDelete} />
-              <ExperienceMobileList entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <ExperienceTable
+                entries={controls.pageItems}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(entry) => setEntryToPurge(entry)}
+              />
+              <ExperienceMobileList
+                entries={controls.pageItems}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(entry) => setEntryToPurge(entry)}
+              />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
@@ -197,10 +231,10 @@ export function ExperienceView({
       )}
 
       <DeleteExperienceDialog
-        entry={entryToDelete}
-        open={entryToDelete !== null}
-        onOpenChange={(open) => { if (!open) setEntryToDelete(null); }}
-        onConfirm={onDelete}
+        entry={entryToPurge}
+        open={entryToPurge !== null}
+        onOpenChange={(open) => { if (!open) setEntryToPurge(null); }}
+        onConfirm={onPurge}
       />
     </div>
   );

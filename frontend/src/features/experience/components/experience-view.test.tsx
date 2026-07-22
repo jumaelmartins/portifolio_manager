@@ -13,6 +13,7 @@ const { replace, toast, useRouter, useSearchParams } = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
 vi.mock("sonner", () => ({ toast }));
 
+import type { ContentState } from "@/lib/content-state";
 import type { ExperienceEntry } from "../types";
 import { ExperienceView } from "./experience-view";
 
@@ -35,25 +36,43 @@ const entries: ExperienceEntry[] = Array.from({ length: 12 }, (_, index) => {
 function renderView({
   search = "",
   entries: testEntries = [] as ExperienceEntry[],
+  state = "active" as ContentState,
+  onArchive = vi.fn(),
+  onUnarchive = vi.fn(),
+  onRestore = vi.fn(),
+  onSoftDelete = vi.fn(),
+  onPurge = vi.fn(async () => {}),
 }: {
   search?: string;
   entries?: ExperienceEntry[];
+  state?: ContentState;
+  onArchive?: (entry: ExperienceEntry) => void;
+  onUnarchive?: (entry: ExperienceEntry) => void;
+  onRestore?: (entry: ExperienceEntry) => void;
+  onSoftDelete?: (entry: ExperienceEntry) => void;
+  onPurge?: (entry: ExperienceEntry) => Promise<void>;
 } = {}) {
   useSearchParams.mockReturnValue(new URLSearchParams(search));
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <ExperienceView
         entries={testEntries}
+        state={state}
         isPending={false}
         error={null}
         onRetry={vi.fn()}
-        onDelete={vi.fn()}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+        onRestore={onRestore}
+        onSoftDelete={onSoftDelete}
+        onPurge={onPurge}
       />
     </QueryClientProvider>,
   );
+  return { ...view, onArchive, onUnarchive, onRestore, onSoftDelete, onPurge };
 }
 
 describe("ExperienceView", () => {
@@ -90,6 +109,33 @@ describe("ExperienceView", () => {
       scroll: false,
     });
   });
+
+  it("renders a StateFilter tablist", () => {
+    renderView({ entries });
+    expect(screen.getByRole("tablist", { name: "Content state" })).toBeInTheDocument();
+  });
+
+  it("in active state, a row shows an Archive button that calls onArchive", async () => {
+    const user = userEvent.setup();
+    const { onArchive } = renderView({ entries, state: "active" });
+
+    const table = screen.getByRole("table");
+    const row = within(table).getByText("Role 12").closest("tr");
+    expect(row).not.toBeNull();
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "Archive Role 12" }));
+    expect(onArchive).toHaveBeenCalledWith(expect.objectContaining({ title: "Role 12" }));
+  });
+
+  it("in trash state, a row shows Restore and Delete…permanently, and no Manual order sort option", () => {
+    renderView({ entries, state: "trash" });
+
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByRole("button", { name: /^Restore /}).length).toBeGreaterThan(0);
+    expect(within(table).getAllByRole("button", { name: /permanently$/ }).length).toBeGreaterThan(0);
+
+    // No "Manual order" option in the sort select while in trash.
+    expect(screen.queryByText("Manual order")).not.toBeInTheDocument();
+  });
 });
 
 describe("ExperienceView manual order", () => {
@@ -102,14 +148,14 @@ describe("ExperienceView manual order", () => {
   });
 
   it("under manual order: shows drag handles, hides search + pagination", () => {
-    renderView({ search: "sort=order", entries: manyEntries });
+    renderView({ search: "sort=order", entries: manyEntries, state: "active" });
     expect(screen.queryByPlaceholderText("Search experience...")).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^Reorder / }).length).toBe(manyEntries.length);
   });
 
   it("under a normal sort: shows search and no drag handles", () => {
-    renderView({ search: "", entries: manyEntries });
+    renderView({ search: "", entries: manyEntries, state: "active" });
     expect(screen.getByPlaceholderText("Search experience...")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Reorder / })).not.toBeInTheDocument();
   });

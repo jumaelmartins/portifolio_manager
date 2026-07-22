@@ -1,9 +1,7 @@
 import { format } from "date-fns";
-import { Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { ContentRowActions } from "@/components/ui/content-row-actions";
 import {
   Table,
   TableBody,
@@ -12,12 +10,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import type { ContentState } from "@/lib/content-state";
 import type { ExperienceEntry } from "../types";
 
 type ExperienceTableProps = {
   entries: ExperienceEntry[];
-  onDelete: (entry: ExperienceEntry) => void;
+  state: ContentState;
+  onArchive: (entry: ExperienceEntry) => void;
+  onUnarchive: (entry: ExperienceEntry) => void;
+  onRestore: (entry: ExperienceEntry) => void;
+  onSoftDelete: (entry: ExperienceEntry) => void;
+  onPurge: (entry: ExperienceEntry) => void;
 };
 
 function formatPeriod(entry: ExperienceEntry) {
@@ -27,7 +30,15 @@ function formatPeriod(entry: ExperienceEntry) {
   return start;
 }
 
-export function ExperienceTable({ entries, onDelete }: ExperienceTableProps) {
+export function ExperienceTable({
+  entries,
+  state,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
+}: ExperienceTableProps) {
   return (
     <div className="hidden overflow-hidden rounded-xl border border-border bg-card/70 md:block">
       <Table>
@@ -51,25 +62,16 @@ export function ExperienceTable({ entries, onDelete }: ExperienceTableProps) {
                 <span className="text-sm text-muted-foreground ml-1">{formatPeriod(entry)}</span>
               </TableCell>
               <TableCell className="pr-4">
-                <div className="flex justify-end gap-1">
-                  <Link
-                    href={`/experience/${entry.id}/edit`}
-                    aria-label={`Edit ${entry.title}`}
-                    className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-                  >
-                    <Pencil />
-                  </Link>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Delete ${entry.title}`}
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => onDelete(entry)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
+                <ContentRowActions
+                  state={state}
+                  label={entry.title}
+                  editHref={`/experience/${entry.id}/edit`}
+                  onArchive={() => onArchive(entry)}
+                  onUnarchive={() => onUnarchive(entry)}
+                  onRestore={() => onRestore(entry)}
+                  onSoftDelete={() => onSoftDelete(entry)}
+                  onPurge={() => onPurge(entry)}
+                />
               </TableCell>
             </TableRow>
           ))}
