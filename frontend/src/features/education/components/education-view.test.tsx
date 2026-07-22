@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { replace, toast, useRouter, useSearchParams } = vi.hoisted(() => ({
@@ -14,6 +13,7 @@ const { replace, toast, useRouter, useSearchParams } = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
 vi.mock("sonner", () => ({ toast }));
 
+import type { ContentState } from "@/lib/content-state";
 import type { EducationEntry } from "../types";
 import { EducationView } from "./education-view";
 
@@ -33,20 +33,46 @@ const entries: EducationEntry[] = Array.from({ length: 12 }, (_, index) => {
   };
 });
 
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
+function renderView({
+  search = "",
+  entries: testEntries = [] as EducationEntry[],
+  state = "active" as ContentState,
+  onArchive = vi.fn(),
+  onUnarchive = vi.fn(),
+  onRestore = vi.fn(),
+  onSoftDelete = vi.fn(),
+  onPurge = vi.fn(async () => {}),
+}: {
+  search?: string;
+  entries?: EducationEntry[];
+  state?: ContentState;
+  onArchive?: (entry: EducationEntry) => void;
+  onUnarchive?: (entry: EducationEntry) => void;
+  onRestore?: (entry: EducationEntry) => void;
+  onSoftDelete?: (entry: EducationEntry) => void;
+  onPurge?: (entry: EducationEntry) => Promise<void>;
+} = {}) {
+  useSearchParams.mockReturnValue(new URLSearchParams(search));
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-}
-
-function renderView(ui: ReactElement) {
-  const queryClient = makeQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  const view = render(
+    <QueryClientProvider client={queryClient}>
+      <EducationView
+        entries={testEntries}
+        state={state}
+        isPending={false}
+        error={null}
+        onRetry={vi.fn()}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+        onRestore={onRestore}
+        onSoftDelete={onSoftDelete}
+        onPurge={onPurge}
+      />
+    </QueryClientProvider>,
   );
+  return { ...view, onArchive, onUnarchive, onRestore, onSoftDelete, onPurge };
 }
 
 describe("EducationView", () => {
@@ -58,15 +84,7 @@ describe("EducationView", () => {
 
   it("paginates entries and moves to page 2", async () => {
     const user = userEvent.setup();
-    renderView(
-      <EducationView
-        entries={entries}
-        isPending={false}
-        error={null}
-        onRetry={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    );
+    renderView({ entries });
 
     expect(screen.getByText("Showing 1–10 of 12")).toBeInTheDocument();
     const table = screen.getByRole("table");
@@ -83,15 +101,7 @@ describe("EducationView", () => {
 
   it("sorts by oldest start and writes ?sort=oldest", async () => {
     const user = userEvent.setup();
-    renderView(
-      <EducationView
-        entries={entries}
-        isPending={false}
-        error={null}
-        onRetry={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    );
+    renderView({ entries });
 
     await user.click(screen.getByRole("combobox", { name: "Sort" }));
     await user.click(screen.getByRole("option", { name: "Oldest start" }));
@@ -103,38 +113,53 @@ describe("EducationView", () => {
     ).toBeInTheDocument();
   });
 
-  it("manual order: hides search and pagination, shows a reorder handle per entry", async () => {
+  it("renders a StateFilter tablist", () => {
+    renderView({ entries });
+    expect(screen.getByRole("tablist", { name: "Content state" })).toBeInTheDocument();
+  });
+
+  it("in active state, a row shows an Archive button that calls onArchive", async () => {
     const user = userEvent.setup();
-    renderView(
-      <EducationView
-        entries={entries}
-        isPending={false}
-        error={null}
-        onRetry={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    );
+    const { onArchive } = renderView({ entries, state: "active" });
 
-    await user.click(screen.getByRole("combobox", { name: "Sort" }));
-    await user.click(screen.getByRole("option", { name: "Manual order" }));
+    const table = screen.getByRole("table");
+    const row = within(table).getByText("Degree 12").closest("tr");
+    expect(row).not.toBeNull();
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "Archive Degree 12" }));
+    expect(onArchive).toHaveBeenCalledWith(expect.objectContaining({ title: "Degree 12" }));
+  });
 
+  it("in trash state, a row shows Restore and Delete…permanently, and no Manual order sort option", () => {
+    renderView({ entries, state: "trash" });
+
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByRole("button", { name: /^Restore /}).length).toBeGreaterThan(0);
+    expect(within(table).getAllByRole("button", { name: /permanently$/ }).length).toBeGreaterThan(0);
+
+    // No "Manual order" option in the sort select while in trash.
+    expect(screen.queryByText("Manual order")).not.toBeInTheDocument();
+  });
+});
+
+describe("EducationView manual order", () => {
+  const manyEntries = entries;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useRouter.mockReturnValue({ replace });
+    useSearchParams.mockReturnValue(new URLSearchParams());
+  });
+
+  it("manual order: hides search and pagination, shows a reorder handle per entry", () => {
+    renderView({ search: "sort=order", entries: manyEntries, state: "active" });
     expect(screen.queryByPlaceholderText("Search education...")).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
     const reorderButtons = screen.getAllByRole("button", { name: /^Reorder / });
-    expect(reorderButtons).toHaveLength(entries.length);
+    expect(reorderButtons).toHaveLength(manyEntries.length);
   });
 
   it("normal mode: shows search input and no reorder handles", () => {
-    renderView(
-      <EducationView
-        entries={entries}
-        isPending={false}
-        error={null}
-        onRetry={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    );
-
+    renderView({ search: "", entries: manyEntries, state: "active" });
     expect(screen.getByPlaceholderText("Search education...")).toBeInTheDocument();
     expect(screen.queryAllByRole("button", { name: /^Reorder / })).toHaveLength(0);
   });

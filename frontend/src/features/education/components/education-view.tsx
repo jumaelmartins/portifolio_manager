@@ -14,9 +14,11 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortSelect } from "@/components/ui/sort-select";
 import { SortableList } from "@/components/ui/sortable-list";
+import { StateFilter } from "@/components/ui/state-filter";
 import { cn } from "@/lib/utils";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
+import type { ContentState } from "@/lib/content-state";
 import { useReorderEducations } from "../api/education-queries";
 import type { EducationEntry } from "../types";
 import { DeleteEducationDialog } from "./delete-education-dialog";
@@ -25,10 +27,15 @@ import { EducationTable } from "./education-table";
 
 type EducationViewProps = {
   entries: EducationEntry[];
+  state: ContentState;
   isPending: boolean;
   error: Error | null;
   onRetry: () => void;
-  onDelete: (entry: EducationEntry) => Promise<void>;
+  onArchive: (entry: EducationEntry) => void;
+  onUnarchive: (entry: EducationEntry) => void;
+  onRestore: (entry: EducationEntry) => void;
+  onSoftDelete: (entry: EducationEntry) => void;
+  onPurge: (entry: EducationEntry) => Promise<void>;
 };
 
 const EDUCATION_SORTS: SortOption<EducationEntry>[] = [
@@ -52,23 +59,33 @@ function EducationSkeleton() {
 
 export function EducationView({
   entries,
+  state,
   isPending,
   error,
   onRetry,
-  onDelete,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
 }: EducationViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [entryToDelete, setEntryToDelete] = useState<EducationEntry | null>(null);
+  const [entryToPurge, setEntryToPurge] = useState<EducationEntry | null>(null);
 
   const controls = useListControls<EducationEntry>({
     items: entries,
     basePath: "/education",
     searchAccessor: (entry) => `${entry.title} ${entry.institutionName}`,
     sorts: EDUCATION_SORTS,
+    defaultState: "active",
   });
+
+  const sortOptions =
+    state === "active" ? EDUCATION_SORTS : EDUCATION_SORTS.filter((s) => s.key !== "order");
+  const isManual = state === "active" && controls.sortKey === "order";
+
   const reorder = useReorderEducations();
-  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -107,6 +124,8 @@ export function EducationView({
         </Link>
       </header>
 
+      <StateFilter value={state} onChange={(next) => controls.setState(next)} />
+
       {entries.length === 0 ? (
         <EmptyState
           title="No education yet"
@@ -130,7 +149,7 @@ export function EducationView({
             )}
             <SortSelect
               value={controls.sortKey}
-              options={EDUCATION_SORTS}
+              options={sortOptions}
               onValueChange={controls.setSortKey}
             />
           </div>
@@ -174,8 +193,24 @@ export function EducationView({
             />
           ) : (
             <>
-              <EducationTable entries={controls.pageItems} onDelete={setEntryToDelete} />
-              <EducationMobileList entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <EducationTable
+                entries={controls.pageItems}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(entry) => setEntryToPurge(entry)}
+              />
+              <EducationMobileList
+                entries={controls.pageItems}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(entry) => setEntryToPurge(entry)}
+              />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
@@ -192,10 +227,10 @@ export function EducationView({
       )}
 
       <DeleteEducationDialog
-        entry={entryToDelete}
-        open={entryToDelete !== null}
-        onOpenChange={(open) => { if (!open) setEntryToDelete(null); }}
-        onConfirm={onDelete}
+        entry={entryToPurge}
+        open={entryToPurge !== null}
+        onOpenChange={(open) => { if (!open) setEntryToPurge(null); }}
+        onConfirm={onPurge}
       />
     </div>
   );
