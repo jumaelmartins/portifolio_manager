@@ -1,10 +1,11 @@
 // frontend/src/features/custom-sections/components/items-drawer.tsx
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ContentRowActions } from "@/components/ui/content-row-actions";
 import {
   Sheet,
   SheetContent,
@@ -13,7 +14,19 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { SortableList } from "@/components/ui/sortable-list";
-import { useCreateItem, useDeleteItem, useReorderItems, useUpdateItem } from "../api/custom-sections-queries";
+import { StateFilter } from "@/components/ui/state-filter";
+import type { ContentState } from "@/lib/content-state";
+import {
+  useArchiveItem,
+  useCreateItem,
+  useDeleteItem,
+  usePurgeItem,
+  useReorderItems,
+  useRestoreItem,
+  useSectionItems,
+  useUnarchiveItem,
+  useUpdateItem,
+} from "../api/custom-sections-queries";
 import type { CustomItem, CustomSection } from "../types";
 import { DeleteItemDialog } from "./delete-item-dialog";
 import { ItemForm } from "./item-form";
@@ -26,23 +39,59 @@ type ItemsDrawerProps = {
 
 type FormMode = null | "create" | CustomItem;
 
+const ROW_CLASS = "flex items-center gap-3 rounded-xl border border-border bg-card/70 p-3";
+
 function summarize(section: CustomSection, item: CustomItem): string {
   return section.fieldSchema
     .map((field) => `${field.label}: ${item.data[field.key] || "—"}`)
     .join(" • ");
 }
 
+function emptyMessage(state: ContentState): string {
+  if (state === "archived") return "No archived items.";
+  if (state === "trash") return "Trash is empty.";
+  return "No items yet. Add the first one.";
+}
+
 export function ItemsDrawer({ section, open, onOpenChange }: ItemsDrawerProps) {
   const [formMode, setFormMode] = useState<FormMode>(null);
-  const [itemToDelete, setItemToDelete] = useState<CustomItem | null>(null);
+  const [drawerState, setDrawerState] = useState<ContentState>("active");
+  const [itemToPurge, setItemToPurge] = useState<CustomItem | null>(null);
+
+  const sectionId = section?.id ?? 0;
+  const itemsQuery = useSectionItems(sectionId, drawerState);
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
-  const reorderItems = useReorderItems(section?.id ?? 0);
+  const archiveItem = useArchiveItem(sectionId);
+  const unarchiveItem = useUnarchiveItem(sectionId);
+  const restoreItem = useRestoreItem(sectionId);
+  const purgeItem = usePurgeItem(sectionId);
+  const reorderItems = useReorderItems(sectionId);
+
+  const items = itemsQuery.data ?? [];
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) setFormMode(null);
+    if (!nextOpen) {
+      setFormMode(null);
+      setDrawerState("active");
+    }
     onOpenChange(nextOpen);
+  }
+
+  function renderItemActions(item: CustomItem, label: string) {
+    return (
+      <ContentRowActions
+        state={drawerState}
+        label={label}
+        onEdit={() => setFormMode(item)}
+        onArchive={() => archiveItem.mutate(item.id)}
+        onUnarchive={() => unarchiveItem.mutate(item.id)}
+        onRestore={() => restoreItem.mutate(item.id)}
+        onSoftDelete={() => deleteItem.mutate(item.id)}
+        onPurge={() => setItemToPurge(item)}
+      />
+    );
   }
 
   return (
@@ -77,41 +126,48 @@ export function ItemsDrawer({ section, open, onOpenChange }: ItemsDrawerProps) {
                   Add Item
                 </Button>
 
-                {section.items.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                    No items yet. Add the first one.
+                <StateFilter value={drawerState} onChange={setDrawerState} />
+
+                {itemsQuery.isPending ? (
+                  <p className="text-sm text-muted-foreground">Loading items…</p>
+                ) : itemsQuery.error ? (
+                  <p role="alert" className="text-sm text-destructive">
+                    Unable to load items.
                   </p>
-                ) : (
+                ) : items.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                    {emptyMessage(drawerState)}
+                  </p>
+                ) : drawerState === "active" ? (
                   <SortableList
-                    items={section.items}
+                    items={items}
                     onReorder={(ids) => reorderItems.mutate(ids)}
                     getLabel={(item) => summarize(section, item)}
                   >
-                    {(item) => (
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="text-sm">{summarize(section, item)}</span>
-                        <div className="flex shrink-0 gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Edit item"
-                            onClick={() => setFormMode(item)}
-                          >
-                            <Pencil />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Delete item"
-                            className="text-destructive"
-                            onClick={() => setItemToDelete(item)}
-                          >
-                            <Trash2 />
-                          </Button>
+                    {(item) => {
+                      const label = summarize(section, item);
+                      return (
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-sm">{label}</span>
+                          {renderItemActions(item, label)}
                         </div>
-                      </div>
-                    )}
+                      );
+                    }}
                   </SortableList>
+                ) : (
+                  <ul className="grid gap-3">
+                    {items.map((item) => {
+                      const label = summarize(section, item);
+                      return (
+                        <li key={item.id} className={ROW_CLASS}>
+                          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                            <span className="text-sm">{label}</span>
+                            {renderItemActions(item, label)}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
               </>
             )}
@@ -120,13 +176,13 @@ export function ItemsDrawer({ section, open, onOpenChange }: ItemsDrawerProps) {
       </SheetContent>
 
       <DeleteItemDialog
-        item={itemToDelete}
-        open={itemToDelete !== null}
+        item={itemToPurge}
+        open={itemToPurge !== null}
         onOpenChange={(nextOpen) => {
-          if (!nextOpen) setItemToDelete(null);
+          if (!nextOpen) setItemToPurge(null);
         }}
         onConfirm={async (item) => {
-          await deleteItem.mutateAsync(item.id);
+          await purgeItem.mutateAsync(item.id);
         }}
       />
     </Sheet>

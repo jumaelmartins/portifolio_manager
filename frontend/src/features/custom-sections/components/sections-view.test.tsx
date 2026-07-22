@@ -12,6 +12,11 @@ const {
   useUpdateItem,
   useDeleteItem,
   useReorderItems,
+  useSectionItems,
+  useArchiveItem,
+  useUnarchiveItem,
+  useRestoreItem,
+  usePurgeItem,
 } = vi.hoisted(() => ({
   replace: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
@@ -22,6 +27,11 @@ const {
   useUpdateItem: vi.fn(),
   useDeleteItem: vi.fn(),
   useReorderItems: vi.fn(),
+  useSectionItems: vi.fn(),
+  useArchiveItem: vi.fn(),
+  useUnarchiveItem: vi.fn(),
+  useRestoreItem: vi.fn(),
+  usePurgeItem: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter, useSearchParams }));
@@ -32,6 +42,11 @@ vi.mock("../api/custom-sections-queries", () => ({
   useUpdateItem,
   useDeleteItem,
   useReorderItems,
+  useSectionItems,
+  useArchiveItem,
+  useUnarchiveItem,
+  useRestoreItem,
+  usePurgeItem,
 }));
 
 import type { ContentState } from "@/lib/content-state";
@@ -96,8 +111,13 @@ describe("SectionsView", () => {
     useReorderSections.mockReturnValue({ mutate: vi.fn() });
     useCreateItem.mockReturnValue({ mutateAsync: vi.fn() });
     useUpdateItem.mockReturnValue({ mutateAsync: vi.fn() });
-    useDeleteItem.mockReturnValue({ mutateAsync: vi.fn() });
+    useDeleteItem.mockReturnValue({ mutate: vi.fn(), mutateAsync: vi.fn() });
     useReorderItems.mockReturnValue({ mutate: vi.fn() });
+    useSectionItems.mockReturnValue({ data: [], isPending: false, error: null });
+    useArchiveItem.mockReturnValue({ mutate: vi.fn() });
+    useUnarchiveItem.mockReturnValue({ mutate: vi.fn() });
+    useRestoreItem.mockReturnValue({ mutate: vi.fn() });
+    usePurgeItem.mockReturnValue({ mutateAsync: vi.fn() });
   });
 
   it("paginates sections and moves to page 2", async () => {
