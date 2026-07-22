@@ -5,18 +5,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ContentState } from "@/lib/content-state";
 import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
 import { useReorder } from "@/lib/reorder/use-reorder";
-import type { CustomItemInput, CustomSection, CustomSectionInput } from "../types";
+import type { CustomItem, CustomItemInput, CustomSection, CustomSectionInput } from "../types";
 import {
+  archiveItem,
   archiveSection,
   createItem,
   createSection,
   deleteItem,
   deleteSection,
   fetchSections,
+  getSectionItems,
+  purgeItem,
   purgeSection,
   reorderItems,
   reorderSections,
+  restoreItem,
   restoreSection,
+  unarchiveItem,
   unarchiveSection,
   updateItem,
   updateSection,
@@ -24,6 +29,10 @@ import {
 
 export const customSectionKeys = {
   all: ["custom-sections"] as const,
+};
+
+export const customSectionItemKeys = {
+  section: (sectionId: number) => ["custom-section-items", sectionId] as const,
 };
 
 export function useSections(state: ContentState = "active") {
@@ -78,8 +87,13 @@ export function useCreateItem() {
   return useMutation({
     mutationFn: ({ sectionId, input }: { sectionId: number; input: CustomItemInput }) =>
       createItem(sectionId, input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: customSectionKeys.all });
+    onSuccess: async (_result, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: customSectionItemKeys.section(variables.sectionId),
+        }),
+        queryClient.invalidateQueries({ queryKey: customSectionKeys.all }),
+      ]);
     },
   });
 }
@@ -90,7 +104,10 @@ export function useUpdateItem() {
     mutationFn: ({ itemId, input }: { itemId: number; input: CustomItemInput }) =>
       updateItem(itemId, input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: customSectionKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["custom-section-items"] }),
+        queryClient.invalidateQueries({ queryKey: customSectionKeys.all }),
+      ]);
     },
   });
 }
@@ -100,7 +117,11 @@ export function useDeleteItem() {
   return useMutation({
     mutationFn: deleteItem,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: customSectionKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["custom-section-items"] }),
+        queryClient.invalidateQueries({ queryKey: customSectionKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
     },
   });
 }
@@ -139,15 +160,48 @@ export function usePurgeSection() {
   return useSectionTransition(purgeSection);
 }
 
+export function useSectionItems(sectionId: number, state: ContentState = "active") {
+  return useQuery({
+    queryKey: [...customSectionItemKeys.section(sectionId), state],
+    queryFn: () => getSectionItems(sectionId, state),
+    enabled: sectionId > 0,
+  });
+}
+
+function useItemTransition(
+  sectionId: number,
+  mutationFn: (itemId: number) => Promise<{ id: number }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: customSectionItemKeys.section(sectionId) }),
+        queryClient.invalidateQueries({ queryKey: customSectionKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveItem(sectionId: number) {
+  return useItemTransition(sectionId, archiveItem);
+}
+export function useUnarchiveItem(sectionId: number) {
+  return useItemTransition(sectionId, unarchiveItem);
+}
+export function useRestoreItem(sectionId: number) {
+  return useItemTransition(sectionId, restoreItem);
+}
+export function usePurgeItem(sectionId: number) {
+  return useItemTransition(sectionId, purgeItem);
+}
+
 export function useReorderItems(sectionId: number) {
-  return useReorder<CustomSection[]>({
-    queryKey: customSectionKeys.all,
+  return useReorder<CustomItem[]>({
+    queryKey: [...customSectionItemKeys.section(sectionId), "active"],
     mutationFn: (ids) => reorderItems(sectionId, ids),
-    applyOptimistic: (sections, ids) =>
-      sections.map((section) =>
-        section.id === sectionId
-          ? { ...section, items: reorderByIds(section.items, ids) }
-          : section,
-      ),
+    applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
 }

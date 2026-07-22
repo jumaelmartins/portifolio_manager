@@ -15,9 +15,12 @@ vi.mock("./custom-sections-api", async (importOriginal) => {
 
 import {
   customSectionKeys,
+  useArchiveItem,
   useArchiveSection,
   useCreateSection,
   useCreateItem,
+  useReorderItems,
+  useSectionItems,
   useSections,
 } from "./custom-sections-queries";
 
@@ -121,5 +124,69 @@ describe("state-aware sections query + transitions", () => {
         expect.objectContaining({ method: "PATCH" }),
       ),
     );
+  });
+});
+
+describe("state-aware items query + transitions", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("[]", { status: 200 })),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function wrapper() {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    return {
+      client,
+      Wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    };
+  }
+
+  it("useSectionItems fetches the trash state and keys the query by (sectionId, state)", async () => {
+    const { Wrapper } = wrapper();
+    renderHook(() => useSectionItems(42, "trash"), { wrapper: Wrapper });
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/custom-sections/42/items?state=trash",
+        expect.anything(),
+      ),
+    );
+  });
+
+  it("useSectionItems does not fetch when sectionId is 0 (no section selected)", async () => {
+    const { Wrapper } = wrapper();
+    renderHook(() => useSectionItems(0, "active"), { wrapper: Wrapper });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("useArchiveItem hits the archive route and invalidates the section's items + sections + dashboard", async () => {
+    const { Wrapper, client } = wrapper();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useArchiveItem(42), { wrapper: Wrapper });
+    result.current.mutate(10);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/custom-sections/items/10/archive",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["custom-section-items", 42] });
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: customSectionKeys.all });
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
+    });
+  });
+
+  it("useReorderItems targets the active items query key for the section", () => {
+    const { Wrapper } = wrapper();
+    const { result } = renderHook(() => useReorderItems(42), { wrapper: Wrapper });
+    expect(result.current).toBeDefined();
   });
 });

@@ -50,4 +50,12 @@ describe("ContentRowActions", () => {
     expect(h.onRestore).toHaveBeenCalled();
     expect(h.onPurge).toHaveBeenCalled();
   });
+
+  it("supports an onEdit callback in place of editHref, rendering a button instead of a link", () => {
+    const onEdit = vi.fn();
+    renderActions("active", { editHref: undefined, onEdit });
+    expect(screen.queryByRole("link", { name: "Edit Widget" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Widget" }));
+    expect(onEdit).toHaveBeenCalled();
+  });
 });

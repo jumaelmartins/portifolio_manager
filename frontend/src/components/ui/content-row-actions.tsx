@@ -10,18 +10,18 @@ import type { ContentState } from "@/lib/content-state";
 type ContentRowActionsProps = {
   state: ContentState;
   label: string;
-  editHref: string;
   onArchive: () => void;
   onUnarchive: () => void;
   onRestore: () => void;
   onSoftDelete: () => void;
   onPurge: () => void;
-};
+} & ({ editHref: string; onEdit?: never } | { onEdit: () => void; editHref?: never });
 
 export function ContentRowActions({
   state,
   label,
   editHref,
+  onEdit,
   onArchive,
   onUnarchive,
   onRestore,
@@ -30,15 +30,26 @@ export function ContentRowActions({
 }: ContentRowActionsProps) {
   return (
     <div className="flex justify-end gap-1">
-      {state !== "trash" && (
-        <Link
-          href={editHref}
-          aria-label={`Edit ${label}`}
-          className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-        >
-          <Pencil />
-        </Link>
-      )}
+      {state !== "trash" &&
+        (onEdit ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Edit ${label}`}
+            onClick={onEdit}
+          >
+            <Pencil />
+          </Button>
+        ) : (
+          <Link
+            href={editHref}
+            aria-label={`Edit ${label}`}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+          >
+            <Pencil />
+          </Link>
+        ))}
 
       {state === "active" && (
         <Button

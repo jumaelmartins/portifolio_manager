@@ -1,8 +1,10 @@
 import type { ApiError } from "@/lib/api/types";
 import type { ContentState } from "@/lib/content-state";
-import { normalizeSection } from "../server/normalize-custom-sections";
+import { normalizeItem, normalizeSection } from "../server/normalize-custom-sections";
 import type {
+  BackendCustomItem,
   BackendCustomSection,
+  CustomItem,
   CustomItemInput,
   CustomSection,
   CustomSectionInput,
@@ -67,6 +69,17 @@ export function purgeSection(id: number): Promise<{ id: number }> {
   return requestJson<{ id: number }>(`/api/custom-sections/${id}/purge`, { method: "DELETE" });
 }
 
+export async function getSectionItems(
+  sectionId: number,
+  state: ContentState = "active",
+): Promise<CustomItem[]> {
+  const suffix = state === "active" ? "" : `?state=${state}`;
+  const data = await requestJson<BackendCustomItem[]>(
+    `/api/custom-sections/${sectionId}/items${suffix}`,
+  );
+  return data.map(normalizeItem);
+}
+
 export async function createItem(sectionId: number, input: CustomItemInput): Promise<void> {
   await requestJson(`/api/custom-sections/${sectionId}/items`, {
     method: "POST",
@@ -83,6 +96,30 @@ export async function updateItem(itemId: number, input: CustomItemInput): Promis
 
 export async function deleteItem(itemId: number): Promise<void> {
   await requestJson(`/api/custom-sections/items/${itemId}`, { method: "DELETE" });
+}
+
+export function archiveItem(itemId: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/items/${itemId}/archive`, {
+    method: "PATCH",
+  });
+}
+
+export function unarchiveItem(itemId: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/items/${itemId}/unarchive`, {
+    method: "PATCH",
+  });
+}
+
+export function restoreItem(itemId: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/items/${itemId}/restore`, {
+    method: "PATCH",
+  });
+}
+
+export function purgeItem(itemId: number): Promise<{ id: number }> {
+  return requestJson<{ id: number }>(`/api/custom-sections/items/${itemId}/purge`, {
+    method: "DELETE",
+  });
 }
 
 export function reorderSections(ids: number[]) {
