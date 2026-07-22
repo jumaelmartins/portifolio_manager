@@ -6,15 +6,20 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import type { ContentState } from "@/lib/content-state";
 import { reorderByIds } from "@/lib/reorder/reorder-by-ids";
 import { useReorder } from "@/lib/reorder/use-reorder";
 import type { ExperienceEntry, ExperienceInput } from "../types";
 import {
+  archiveExperience,
   createExperience,
   deleteExperience,
   getExperience,
   getExperiences,
+  purgeExperience,
   reorderExperiences,
+  restoreExperience,
+  unarchiveExperience,
   updateExperience,
 } from "./experience-api";
 
@@ -23,10 +28,10 @@ export const experienceKeys = {
   detail: (id: number) => ["experience", id] as const,
 };
 
-export function useExperiences() {
+export function useExperiences(state: ContentState = "active") {
   return useQuery({
-    queryKey: experienceKeys.all,
-    queryFn: getExperiences,
+    queryKey: [...experienceKeys.all, state],
+    queryFn: () => getExperiences(state),
   });
 }
 
@@ -87,8 +92,36 @@ export function useDeleteExperience() {
 
 export function useReorderExperiences() {
   return useReorder<ExperienceEntry[]>({
-    queryKey: experienceKeys.all,
+    queryKey: [...experienceKeys.all, "active"],
     mutationFn: reorderExperiences,
     applyOptimistic: (items, ids) => reorderByIds(items, ids),
   });
+}
+
+function useExperienceTransition(
+  mutationFn: (id: number) => Promise<{ id: number }>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: experienceKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveExperience() {
+  return useExperienceTransition(archiveExperience);
+}
+export function useUnarchiveExperience() {
+  return useExperienceTransition(unarchiveExperience);
+}
+export function useRestoreExperience() {
+  return useExperienceTransition(restoreExperience);
+}
+export function usePurgeExperience() {
+  return useExperienceTransition(purgeExperience);
 }

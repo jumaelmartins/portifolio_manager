@@ -1,4 +1,5 @@
 import type { ApiError } from "@/lib/api/types";
+import type { ContentState } from "@/lib/content-state";
 import type { ExperienceEntry, ExperienceInput } from "../types";
 
 async function requestJson<T>(
@@ -34,8 +35,9 @@ async function requestJson<T>(
   return payload as T;
 }
 
-export function getExperiences() {
-  return requestJson<ExperienceEntry[]>("/api/experience");
+export function getExperiences(state: ContentState = "active") {
+  const suffix = state === "active" ? "" : `?state=${state}`;
+  return requestJson<ExperienceEntry[]>(`/api/experience${suffix}`);
 }
 
 export function getExperience(id: number) {
@@ -66,5 +68,29 @@ export function reorderExperiences(ids: number[]) {
   return requestJson<ExperienceEntry[]>("/api/experience/reorder", {
     method: "PATCH",
     body: JSON.stringify({ ids }),
+  });
+}
+
+export function archiveExperience(id: number) {
+  return requestJson<{ id: number }>(`/api/experience/${id}/archive`, {
+    method: "PATCH",
+  });
+}
+
+export function unarchiveExperience(id: number) {
+  return requestJson<{ id: number }>(`/api/experience/${id}/unarchive`, {
+    method: "PATCH",
+  });
+}
+
+export function restoreExperience(id: number) {
+  return requestJson<{ id: number }>(`/api/experience/${id}/restore`, {
+    method: "PATCH",
+  });
+}
+
+export function purgeExperience(id: number) {
+  return requestJson<{ id: number }>(`/api/experience/${id}/purge`, {
+    method: "DELETE",
   });
 }
