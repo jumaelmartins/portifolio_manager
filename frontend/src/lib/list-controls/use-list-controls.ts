@@ -104,7 +104,11 @@ export function useListControls<T>(
   }
 
   function setState(value: string) {
-    update({ state: value, sortKey: defaultSortKey }, true);
+    // Switching state also clears extra filters (e.g. Projects' category/
+    // technology) — they are Active-only and their controls are hidden off
+    // Active, so a persisted value would silently filter the archived/trash
+    // list with no visible cause.
+    update({ state: value, sortKey: defaultSortKey, extras: {} }, true);
   }
 
   function setParam(key: string, value: string | null) {

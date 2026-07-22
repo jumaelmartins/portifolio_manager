@@ -2,8 +2,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ContentRowActions } from "./content-row-actions";
 
-const noop = () => {};
-
 function renderActions(state: "active" | "archived" | "trash", overrides = {}) {
   const handlers = {
     onArchive: vi.fn(),

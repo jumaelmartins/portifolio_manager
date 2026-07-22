@@ -115,9 +115,11 @@ describe("project state queries", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    return ({ children }: { children: ReactNode }) => (
+    const Wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
+    Wrapper.displayName = "QueryWrapper";
+    return Wrapper;
   }
 
   it("fetches the active state by default", async () => {
