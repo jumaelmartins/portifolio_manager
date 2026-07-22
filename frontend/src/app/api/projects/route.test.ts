@@ -34,7 +34,7 @@ describe("/api/projects", () => {
   it("normalizes the project collection", async () => {
     backendFetch.mockResolvedValue(Response.json([backendProject]));
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/projects"));
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([
