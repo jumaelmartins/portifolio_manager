@@ -1,11 +1,17 @@
 "use client";
 
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseContentState } from "@/lib/content-state";
 import {
-  useDeleteCourse,
+  useArchiveCourse,
   useCourses,
+  useDeleteCourse,
+  usePurgeCourse,
+  useRestoreCourse,
+  useUnarchiveCourse,
 } from "@/features/courses/api/course-queries";
 import { CourseView } from "@/features/courses/components/course-view";
 
@@ -25,17 +31,29 @@ export default function CoursesPage() {
 }
 
 function CoursesPageContent() {
-  const courses = useCourses();
-  const deleteCourse = useDeleteCourse();
+  const searchParams = useSearchParams();
+  const state = parseContentState(searchParams.get("state"));
+
+  const courses = useCourses(state);
+  const softDelete = useDeleteCourse();
+  const archive = useArchiveCourse();
+  const unarchive = useUnarchiveCourse();
+  const restore = useRestoreCourse();
+  const purge = usePurgeCourse();
 
   return (
     <CourseView
       entries={courses.data ?? []}
+      state={state}
       isPending={courses.isPending}
       error={courses.error}
       onRetry={() => void courses.refetch()}
-      onDelete={async (entry) => {
-        await deleteCourse.mutateAsync(entry.id);
+      onArchive={(entry) => archive.mutate(entry.id)}
+      onUnarchive={(entry) => unarchive.mutate(entry.id)}
+      onRestore={(entry) => restore.mutate(entry.id)}
+      onSoftDelete={(entry) => softDelete.mutate(entry.id)}
+      onPurge={async (entry) => {
+        await purge.mutateAsync(entry.id);
       }}
     />
   );

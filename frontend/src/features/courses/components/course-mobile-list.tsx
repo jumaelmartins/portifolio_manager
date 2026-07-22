@@ -1,19 +1,30 @@
 import { format } from "date-fns";
-import { Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { ContentRowActions } from "@/components/ui/content-row-actions";
+import type { ContentState } from "@/lib/content-state";
 import type { CourseEntry } from "../types";
 
 type CourseMobileListProps = {
   entries: CourseEntry[];
-  onDelete: (entry: CourseEntry) => void;
+  state: ContentState;
+  onArchive: (entry: CourseEntry) => void;
+  onUnarchive: (entry: CourseEntry) => void;
+  onRestore: (entry: CourseEntry) => void;
+  onSoftDelete: (entry: CourseEntry) => void;
+  onPurge: (entry: CourseEntry) => void;
 };
 
-export function CourseMobileList({ entries, onDelete }: CourseMobileListProps) {
+export function CourseMobileList({
+  entries,
+  state,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
+}: CourseMobileListProps) {
   return (
     <div className="grid gap-3 md:hidden">
       {entries.map((entry) => (
@@ -31,24 +42,17 @@ export function CourseMobileList({ entries, onDelete }: CourseMobileListProps) {
                   </span>
                 </div>
               </div>
-              <div className="flex shrink-0 gap-1">
-                <Link
-                  href={`/courses/${entry.id}/edit`}
-                  aria-label={`Edit ${entry.title}`}
-                  className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-                >
-                  <Pencil />
-                </Link>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Delete ${entry.title}`}
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => onDelete(entry)}
-                >
-                  <Trash2 />
-                </Button>
+              <div className="shrink-0">
+                <ContentRowActions
+                  state={state}
+                  label={entry.title}
+                  editHref={`/courses/${entry.id}/edit`}
+                  onArchive={() => onArchive(entry)}
+                  onUnarchive={() => onUnarchive(entry)}
+                  onRestore={() => onRestore(entry)}
+                  onSoftDelete={() => onSoftDelete(entry)}
+                  onPurge={() => onPurge(entry)}
+                />
               </div>
             </div>
           </CardContent>

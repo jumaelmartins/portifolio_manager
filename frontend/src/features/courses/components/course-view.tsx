@@ -16,7 +16,9 @@ import { SortSelect } from "@/components/ui/sort-select";
 import { useListControls } from "@/lib/list-controls/use-list-controls";
 import type { SortOption } from "@/lib/list-controls/types";
 import { SortableList } from "@/components/ui/sortable-list";
+import { StateFilter } from "@/components/ui/state-filter";
 import { cn } from "@/lib/utils";
+import type { ContentState } from "@/lib/content-state";
 import type { CourseEntry } from "../types";
 import { useReorderCourses } from "../api/course-queries";
 import { DeleteCourseDialog } from "./delete-course-dialog";
@@ -25,10 +27,15 @@ import { CourseTable } from "./course-table";
 
 type CourseViewProps = {
   entries: CourseEntry[];
+  state: ContentState;
   isPending: boolean;
   error: Error | null;
   onRetry: () => void;
-  onDelete: (entry: CourseEntry) => Promise<void>;
+  onArchive: (entry: CourseEntry) => void;
+  onUnarchive: (entry: CourseEntry) => void;
+  onRestore: (entry: CourseEntry) => void;
+  onSoftDelete: (entry: CourseEntry) => void;
+  onPurge: (entry: CourseEntry) => Promise<void>;
 };
 
 const COURSE_SORTS: SortOption<CourseEntry>[] = [
@@ -52,24 +59,33 @@ function CourseSkeleton() {
 
 export function CourseView({
   entries,
+  state,
   isPending,
   error,
   onRetry,
-  onDelete,
+  onArchive,
+  onUnarchive,
+  onRestore,
+  onSoftDelete,
+  onPurge,
 }: CourseViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [entryToDelete, setEntryToDelete] = useState<CourseEntry | null>(null);
+  const [entryToPurge, setEntryToPurge] = useState<CourseEntry | null>(null);
 
   const controls = useListControls<CourseEntry>({
     items: entries,
     basePath: "/courses",
     searchAccessor: (entry) => `${entry.title} ${entry.institutionName}`,
     sorts: COURSE_SORTS,
+    defaultState: "active",
   });
 
+  const sortOptions =
+    state === "active" ? COURSE_SORTS : COURSE_SORTS.filter((s) => s.key !== "order");
+  const isManual = state === "active" && controls.sortKey === "order";
+
   const reorder = useReorderCourses();
-  const isManual = controls.sortKey === "order";
 
   useEffect(() => {
     const created = searchParams.get("created") === "1";
@@ -108,6 +124,8 @@ export function CourseView({
         </Link>
       </header>
 
+      <StateFilter value={state} onChange={(next) => controls.setState(next)} />
+
       {entries.length === 0 ? (
         <EmptyState
           title="No courses yet"
@@ -131,7 +149,7 @@ export function CourseView({
             )}
             <SortSelect
               value={controls.sortKey}
-              options={COURSE_SORTS}
+              options={sortOptions}
               onValueChange={controls.setSortKey}
             />
           </div>
@@ -175,8 +193,24 @@ export function CourseView({
             />
           ) : (
             <>
-              <CourseTable entries={controls.pageItems} onDelete={setEntryToDelete} />
-              <CourseMobileList entries={controls.pageItems} onDelete={setEntryToDelete} />
+              <CourseTable
+                entries={controls.pageItems}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(entry) => setEntryToPurge(entry)}
+              />
+              <CourseMobileList
+                entries={controls.pageItems}
+                state={state}
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onRestore={onRestore}
+                onSoftDelete={onSoftDelete}
+                onPurge={(entry) => setEntryToPurge(entry)}
+              />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   Showing {controls.rangeStart}–{controls.rangeEnd} of {controls.totalFiltered}
@@ -193,10 +227,10 @@ export function CourseView({
       )}
 
       <DeleteCourseDialog
-        entry={entryToDelete}
-        open={entryToDelete !== null}
-        onOpenChange={(open) => { if (!open) setEntryToDelete(null); }}
-        onConfirm={onDelete}
+        entry={entryToPurge}
+        open={entryToPurge !== null}
+        onOpenChange={(open) => { if (!open) setEntryToPurge(null); }}
+        onConfirm={onPurge}
       />
     </div>
   );
