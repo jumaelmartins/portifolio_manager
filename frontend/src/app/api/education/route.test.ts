@@ -25,7 +25,7 @@ describe("/api/education", () => {
 
   it("normalizes the education collection", async () => {
     backendFetch.mockResolvedValue(Response.json([backendEntry]));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/education"));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([
       expect.objectContaining({ id: 2, title: "BSc Computer Science", institutionName: "MIT" }),
@@ -77,7 +77,7 @@ describe("/api/education", () => {
 
   it("passes through backend error responses", async () => {
     backendFetch.mockResolvedValue(new Response(null, { status: 500 }));
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/education"));
     expect(response.status).toBe(500);
   });
 });
