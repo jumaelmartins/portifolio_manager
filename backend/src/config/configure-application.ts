@@ -7,9 +7,12 @@ import {
   parseAllowedOrigins,
   setUploadSecurityHeaders,
 } from './application.config';
+import { publicCors } from './public-cors.middleware';
 
 export function configureApplication(app: NestExpressApplication) {
   const configService = app.get(ConfigService);
+
+  app.use(publicCors);
 
   app.enableCors({
     origin: parseAllowedOrigins(
