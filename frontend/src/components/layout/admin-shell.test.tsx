@@ -41,6 +41,10 @@ describe("AdminShell", () => {
       "href",
       "/projects",
     );
+    expect(screen.getByRole("link", { name: "Public API" })).toHaveAttribute(
+      "href",
+      "/public-api",
+    );
     expect(screen.getAllByText("Soon").length).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: "Open navigation menu" }),

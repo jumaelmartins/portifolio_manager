@@ -64,7 +64,7 @@ export const navigationGroups: NavigationGroup[] = [
     label: "System",
     items: [
       { label: "Profile", icon: UserCog, href: "/profile" },
-      { label: "Public API", icon: Globe, disabled: true },
+      { label: "Public API", icon: Globe, href: "/public-api" },
       { label: "Audit Logs", icon: ShieldCheck, disabled: true },
       { label: "Settings", icon: Settings, disabled: true },
     ],
