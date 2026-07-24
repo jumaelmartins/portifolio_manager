@@ -7,6 +7,7 @@ import {
   sessionCookieOptions,
   sessionMaxAge,
   SYSADMIN_ROLE,
+  userIdFromToken,
 } from "./session";
 
 async function signWithRole(role: unknown) {
@@ -28,6 +29,28 @@ describe("roleFromToken", () => {
   it("extracts a regular role claim as a string", async () => {
     const token = await signWithRole("2");
     expect(roleFromToken(token)).toBe("2");
+  });
+});
+
+describe("userIdFromToken", () => {
+  async function makeToken(claims: Record<string, unknown>) {
+    return new SignJWT(claims)
+      .setProtectedHeader({ alg: "HS256" })
+      .sign(new TextEncoder().encode("test-secret"));
+  }
+
+  it("returns the sub claim as a string", async () => {
+    const token = await makeToken({ sub: 7, role: 2 });
+    expect(userIdFromToken(token)).toBe("7");
+  });
+
+  it("returns null when there is no token", () => {
+    expect(userIdFromToken(undefined)).toBeNull();
+  });
+
+  it("returns null when sub is absent", async () => {
+    const token = await makeToken({ role: 2 });
+    expect(userIdFromToken(token)).toBeNull();
   });
 });
 

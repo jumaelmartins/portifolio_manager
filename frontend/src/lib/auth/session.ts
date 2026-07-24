@@ -20,6 +20,17 @@ export async function getSessionRole(): Promise<string | null> {
   return roleFromToken(token);
 }
 
+export function userIdFromToken(token: string | undefined): string | null {
+  if (!token) return null;
+  const sub = decodeJwt(token).sub;
+  return sub == null ? null : String(sub);
+}
+
+export async function getSessionUserId(): Promise<string | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  return userIdFromToken(token);
+}
+
 export function sessionMaxAge(
   token: string,
   now = Math.floor(Date.now() / 1000),
