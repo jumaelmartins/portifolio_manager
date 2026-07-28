@@ -1,7 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { PublicService } from './public.service';
 
 @Controller('public')
+@UseGuards(ThrottlerGuard)
 export class PublicController {
   constructor(private readonly publicService: PublicService) {}
 
