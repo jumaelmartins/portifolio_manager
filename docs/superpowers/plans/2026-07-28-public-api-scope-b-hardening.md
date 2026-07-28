@@ -17,7 +17,8 @@
 - Throttling applies to `/public/*` ONLY. Do NOT register `ThrottlerGuard` as a global `APP_GUARD`. The authenticated admin API stays un-throttled.
 - Do NOT change `PublicService`, the response payload, `publicCors` behavior, or the global credentialed `enableCors` for non-public routes.
 - `@nestjs/throttler` `ttl` is in **milliseconds** — use the exported `seconds()` helper (`seconds(60)` = 60000). Env `PUBLIC_RATE_TTL` is expressed in **seconds**.
-- Run all backend commands from `backend/`. e2e needs the Docker Compose PostgreSQL on port 55432 (`npm run test:e2e`).
+- Run all backend commands from `backend/`. e2e needs the Docker Compose PostgreSQL on port 55432 (`npm run test:e2e`) — the controller has already started it, migrated, and seeded (`e2e@portfolio.test`).
+- Jest is v30: the filter flag is `--testPathPatterns=` (PLURAL). `--testPathPattern` (singular) errors out.
 
 ---
 
@@ -113,7 +114,7 @@ describe('Public API hardening — rate limit (e2e)', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `npm run test:e2e -- --testPathPattern=public-rate-limit`
+Run: `npm run test:e2e -- --testPathPatterns=public-rate-limit`
 Expected: FAIL — no throttling wired yet, so the 4th request returns `404` (missing user), not `429`; the `expect(blocked.status).toBe(429)` assertion fails.
 
 - [ ] **Step 3: Install the throttler dependency**
@@ -185,12 +186,12 @@ PUBLIC_RATE_TTL=60
 
 - [ ] **Step 7: Run the test to verify it passes**
 
-Run: `npm run test:e2e -- --testPathPattern=public-rate-limit`
+Run: `npm run test:e2e -- --testPathPatterns=public-rate-limit`
 Expected: PASS — 3 requests allowed, the 4th returns `429` with a `Retry-After` header and `Access-Control-Allow-Origin: *`.
 
 - [ ] **Step 8: Guard against regressions in the neighbouring public e2e**
 
-Run: `npm run test:e2e -- --testPathPattern="public-cors|soft-delete|reorder"`
+Run: `npm run test:e2e -- --testPathPatterns="public-cors|soft-delete|reorder"`
 Expected: PASS — each of those specs uses its own app instance with the default limit (60), and none makes more than a handful of `/public` requests, so the throttle does not trip. If any fails with `429`, that spec exceeds 60 public reads; do not raise the global default — instead report it (out of scope to fix here).
 
 - [ ] **Step 9: Commit**
@@ -304,7 +305,7 @@ describe('Public API hardening — caching (e2e)', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `npm run test:e2e -- --testPathPattern=public-cache`
+Run: `npm run test:e2e -- --testPathPatterns=public-cache`
 Expected: FAIL on the first test — no `Cache-Control` header is set yet, so `res.headers['cache-control']` is `undefined`, not `'public, max-age=60, s-maxage=60'`. (The `304` test may already pass via Express's default ETag; the `Cache-Control` assertion is the RED.)
 
 - [ ] **Step 3: Add the `Cache-Control` header on the public route**
@@ -331,7 +332,7 @@ export class PublicController {
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `npm run test:e2e -- --testPathPattern=public-cache`
+Run: `npm run test:e2e -- --testPathPatterns=public-cache`
 Expected: PASS — both tests green: `Cache-Control: public, max-age=60, s-maxage=60` present on the `200`, and the conditional request returns `304`.
 
 Fallback (only if the `304` test fails): confirm Express ETag is enabled — `app.getHttpAdapter().getInstance().enabled('etag')` should be truthy; `configureApplication` does not disable it. If for some reason it is off, that is an environment anomaly — report it rather than adding a custom ETag interceptor (out of scope for this plan).
