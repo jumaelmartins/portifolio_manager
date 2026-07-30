@@ -6,10 +6,12 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend.yml"
+  pull_request:
+    branches: [master]
 
 jobs:
   ci:
-    name: Lint & Test
+    name: Frontend Lint & Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,6 +32,7 @@ jobs:
   docker:
     name: Build & Push
     needs: ci
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,6 +61,7 @@ jobs:
   deploy:
     name: Deploy
     needs: docker
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       # CR_PAT must be a classic PAT with scope: read:packages
