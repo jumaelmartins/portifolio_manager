@@ -5,14 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from 'src/app.module';
 import { configureApplication } from 'src/config/configure-application';
-import { loginE2eUser } from './helpers/auth';
-
-function userIdFromToken(token: string): number {
-  const payload = JSON.parse(
-    Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
-  );
-  return Number(payload.sub);
-}
+import { loginE2eUser, userIdFromToken } from './helpers/auth';
 
 describe('Public API hardening — caching (e2e)', () => {
   let app: INestApplication<App>;
@@ -66,5 +59,13 @@ describe('Public API hardening — caching (e2e)', () => {
       .set('If-None-Match', etag);
 
     expect(second.status).toBe(304);
+  });
+
+  it('does NOT set Cache-Control on a 404 (error responses stay uncacheable)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/public/users/999999')
+      .expect(404);
+
+    expect(res.headers['cache-control']).toBeUndefined();
   });
 });

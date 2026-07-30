@@ -9,13 +9,17 @@ import { PublicController } from './public.controller';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          // ttl is milliseconds; env PUBLIC_RATE_TTL is seconds.
-          ttl: seconds(Number(config.get<string>('PUBLIC_RATE_TTL') ?? '60')),
-          limit: Number(config.get<string>('PUBLIC_RATE_LIMIT') ?? '60'),
-        },
-      ],
+      useFactory: (config: ConfigService) => {
+        const ttlSeconds = Number(config.get<string>('PUBLIC_RATE_TTL'));
+        const limit = Number(config.get<string>('PUBLIC_RATE_LIMIT'));
+        return [
+          {
+            // ttl is milliseconds; env PUBLIC_RATE_TTL is seconds.
+            ttl: seconds(Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds : 60),
+            limit: Number.isFinite(limit) && limit > 0 ? limit : 60,
+          },
+        ];
+      },
     }),
   ],
   controllers: [PublicController],
