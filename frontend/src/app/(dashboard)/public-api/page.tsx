@@ -4,7 +4,9 @@ import { PublicApiPanel } from "@/features/public-api/components/public-api-pane
 export default async function PublicApiPage() {
   const userId = await getSessionUserId();
   const baseUrl =
-    process.env.NEXT_PUBLIC_PUBLIC_API_URL ?? "http://localhost:3000";
+    process.env.BACKEND_PUBLIC_URL ??
+    process.env.BACKEND_URL ??
+    "http://localhost:3000";
 
   return (
     <div className="space-y-6">
