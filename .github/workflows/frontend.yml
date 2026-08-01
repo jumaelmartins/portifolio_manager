@@ -65,7 +65,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # CR_PAT must be a classic PAT with scope: read:packages
-      - uses: appleboy/ssh-action@v1.0.3
+      # The SSH connection to the VPS is intermittently flaky (transient
+      # "dial tcp :22 i/o timeout"). Try once, then retry after a short
+      # backoff before failing the job. The script is idempotent, so a
+      # partial first attempt is safe to re-run.
+      - name: Deploy to VPS
+        id: deploy
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.0.3
         env:
           CR_PAT: ${{ secrets.CR_PAT }}
         with:
@@ -73,6 +80,31 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           envs: CR_PAT
+          timeout: 60s
+          command_timeout: 10m
+          script: |
+            echo "$CR_PAT" | docker login ghcr.io -u jumaelmartins --password-stdin
+            cd /opt/portfolio-manager
+            docker compose -f docker-compose.prod.yml pull frontend
+            docker compose -f docker-compose.prod.yml stop frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps frontend
+
+      - name: Wait before retry
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy to VPS (retry)
+        if: steps.deploy.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          CR_PAT: ${{ secrets.CR_PAT }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: CR_PAT
+          timeout: 60s
+          command_timeout: 10m
           script: |
             echo "$CR_PAT" | docker login ghcr.io -u jumaelmartins --password-stdin
             cd /opt/portfolio-manager
