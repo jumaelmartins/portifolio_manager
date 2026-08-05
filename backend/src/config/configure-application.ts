@@ -31,6 +31,7 @@ export function configureApplication(app: NestExpressApplication) {
     )
     .setVersion('1.0')
     .addTag('portfolio_manager')
+    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'x-api-key')
     .build();
   const documentFactory = () =>
     SwaggerModule.createDocument(app, swaggerConfig);
