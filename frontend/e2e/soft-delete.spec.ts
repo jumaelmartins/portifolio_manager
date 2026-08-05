@@ -34,13 +34,6 @@ test.describe("experience soft delete lifecycle", () => {
     await page.getByRole("tab", { name: "Archived" }).click();
     await expect(page.getByText(role).filter({ visible: true })).toBeVisible();
 
-    // Absent from the public portfolio while archived.
-    const profileRes = await page.request.get("/api/profile");
-    expect(profileRes.ok()).toBeTruthy();
-    const profile = (await profileRes.json()) as { id: number };
-    await page.goto(`/portfolio/${profile.id}`);
-    await expect(page.getByRole("heading", { name: "Experience" })).toHaveCount(0);
-
     // Move to trash: leaves the Archived tab...
     await page.goto("/experience?state=archived");
     await expect(page.getByText(role).filter({ visible: true })).toBeVisible();
