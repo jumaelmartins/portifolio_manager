@@ -29,22 +29,24 @@ describe('Public API CORS (e2e)', () => {
 
   it('allows any origin on a public route (GET)', async () => {
     const res = await request(app.getHttpServer())
-      .get('/public/users/999999')
+      .get('/public/portfolio')
       .set('Origin', EXTERNAL_ORIGIN);
 
-    // 404 for a missing user is fine — the CORS header is set regardless.
+    // 401 without a key is fine — the CORS header is set regardless.
     expect(res.headers['access-control-allow-origin']).toBe('*');
   });
 
-  it('answers the public preflight with 204 + open CORS', async () => {
+  it('answers the public preflight with 204 + open CORS + x-api-key allowed', async () => {
     const res = await request(app.getHttpServer())
-      .options('/public/users/1')
+      .options('/public/portfolio')
       .set('Origin', EXTERNAL_ORIGIN)
-      .set('Access-Control-Request-Method', 'GET');
+      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Headers', 'x-api-key');
 
     expect(res.status).toBe(204);
     expect(res.headers['access-control-allow-origin']).toBe('*');
     expect(res.headers['access-control-allow-methods']).toContain('GET');
+    expect(res.headers['access-control-allow-headers']).toContain('x-api-key');
   });
 
   it('does NOT open non-public routes to an external origin', async () => {

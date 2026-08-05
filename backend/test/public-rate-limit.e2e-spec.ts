@@ -5,16 +5,16 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from 'src/app.module';
 import { configureApplication } from 'src/config/configure-application';
+import { loginE2eUser } from './helpers/auth';
 
 const EXTERNAL_ORIGIN = 'https://someone-portfolio.example.com';
 
 describe('Public API hardening — rate limit (e2e)', () => {
   let app: INestApplication<App>;
+  let apiKey: string;
 
   beforeAll(async () => {
-    // Low, deterministic limit for this spec only. ConfigService reads
-    // process.env; ThrottlerModule.forRootAsync's factory runs at compile
-    // (below), so setting these before compile() takes effect.
+    // Low, deterministic per-key limit for this spec only.
     process.env.PUBLIC_RATE_LIMIT = '3';
     process.env.PUBLIC_RATE_TTL = '60';
 
@@ -27,6 +27,14 @@ describe('Public API hardening — rate limit (e2e)', () => {
     configureApplication(nestApp);
     app = nestApp;
     await app.init();
+
+    const token = await loginE2eUser(app);
+    const created = await request(app.getHttpServer())
+      .post('/api-keys')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ label: 'rate-limit-e2e' })
+      .expect(201);
+    apiKey = created.body.key as string;
   });
 
   afterAll(async () => {
@@ -36,17 +44,19 @@ describe('Public API hardening — rate limit (e2e)', () => {
   });
 
   it('allows up to the limit, then 429 with Retry-After and open CORS', async () => {
-    const path = '/public/users/999999';
+    const path = '/public/portfolio';
 
     for (let i = 0; i < 3; i += 1) {
       const ok = await request(app.getHttpServer())
         .get(path)
+        .set('x-api-key', apiKey)
         .set('Origin', EXTERNAL_ORIGIN);
       expect(ok.status).not.toBe(429);
     }
 
     const blocked = await request(app.getHttpServer())
       .get(path)
+      .set('x-api-key', apiKey)
       .set('Origin', EXTERNAL_ORIGIN);
 
     expect(blocked.status).toBe(429);
