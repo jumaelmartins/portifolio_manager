@@ -11,7 +11,7 @@ export function publicCors(req: Request, res: Response, next: NextFunction) {
   if (req.path === '/public' || req.path.startsWith('/public/')) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
     if (req.method === 'OPTIONS') {
       res.sendStatus(204);
       return;

@@ -1,8 +1,6 @@
-import { getSessionUserId } from "@/lib/auth/session";
 import { PublicApiPanel } from "@/features/public-api/components/public-api-panel";
 
-export default async function PublicApiPage() {
-  const userId = await getSessionUserId();
+export default function PublicApiPage() {
   const baseUrl =
     process.env.BACKEND_PUBLIC_URL ??
     process.env.BACKEND_URL ??
@@ -16,11 +14,12 @@ export default async function PublicApiPage() {
           Public API
         </h1>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-          Consume your portfolio content from any external site.
+          Consume your portfolio content from any external site using an API
+          key.
         </p>
       </header>
 
-      <PublicApiPanel userId={userId} baseUrl={baseUrl} />
+      <PublicApiPanel baseUrl={baseUrl} />
     </div>
   );
 }

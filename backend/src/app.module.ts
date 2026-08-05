@@ -16,6 +16,7 @@ import { ExperienceModule } from './modules/experience/experience.module';
 import { PublicModule } from './modules/public/public.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CustomSectionsModule } from './modules/custom-sections/custom-sections.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { DatabaseModule } from './database/database.module';
@@ -40,6 +41,7 @@ import { ConfigModule } from '@nestjs/config';
     PublicModule,
     AuditModule,
     CustomSectionsModule,
+    ApiKeysModule,
   ],
   controllers: [AppController],
   providers: [

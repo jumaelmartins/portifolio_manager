@@ -5,14 +5,14 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from 'src/app.module';
 import { configureApplication } from 'src/config/configure-application';
-import { loginE2eUser, userIdFromToken } from './helpers/auth';
+import { loginE2eUser } from './helpers/auth';
 
 const listIds = (body: Array<{ id: number }>) => body.map((r) => r.id);
 
 describe('Soft-delete lifecycle (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
-  let userId: number;
+  let apiKey: string;
   let id: number;
   const title = `SoftDelete E2E ${Date.now()}`;
 
@@ -24,7 +24,8 @@ describe('Soft-delete lifecycle (e2e)', () => {
 
   const publicTitles = async () => {
     const res = await request(app.getHttpServer())
-      .get(`/public/users/${userId}`)
+      .get('/public/portfolio')
+      .set('x-api-key', apiKey)
       .expect(200);
     return (res.body.f_experience as Array<{ tile: string }>).map(
       (e) => e.tile,
@@ -32,6 +33,9 @@ describe('Soft-delete lifecycle (e2e)', () => {
   };
 
   beforeAll(async () => {
+    process.env.PUBLIC_RATE_LIMIT = '1000';
+    process.env.PUBLIC_RATE_TTL = '60';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -43,7 +47,13 @@ describe('Soft-delete lifecycle (e2e)', () => {
     await app.init();
 
     token = await loginE2eUser(app);
-    userId = userIdFromToken(token);
+
+    const createdKey = await request(app.getHttpServer())
+      .post('/api-keys')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ label: 'soft-delete-e2e' })
+      .expect(201);
+    apiKey = createdKey.body.key as string;
 
     const created = await request(app.getHttpServer())
       .post('/experience')
@@ -63,6 +73,8 @@ describe('Soft-delete lifecycle (e2e)', () => {
     await request(app.getHttpServer())
       .delete(`/experience/${id}/purge`)
       .set('Authorization', `Bearer ${token}`);
+    delete process.env.PUBLIC_RATE_LIMIT;
+    delete process.env.PUBLIC_RATE_TTL;
     await app.close();
   });
 
