@@ -17,6 +17,7 @@ describe('Public API hardening — rate limit (e2e)', () => {
     // Low, deterministic per-key limit for this spec only.
     process.env.PUBLIC_RATE_LIMIT = '3';
     process.env.PUBLIC_RATE_TTL = '60';
+    process.env.PUBLIC_IP_RATE_LIMIT = '1000';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -40,6 +41,7 @@ describe('Public API hardening — rate limit (e2e)', () => {
   afterAll(async () => {
     delete process.env.PUBLIC_RATE_LIMIT;
     delete process.env.PUBLIC_RATE_TTL;
+    delete process.env.PUBLIC_IP_RATE_LIMIT;
     await app.close();
   });
 

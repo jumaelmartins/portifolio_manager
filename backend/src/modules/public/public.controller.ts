@@ -6,15 +6,15 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiSecurity } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { PublicService } from './public.service';
 import { PublicCacheInterceptor } from './public-cache.interceptor';
-import { PublicKeyThrottlerGuard } from './public-key-throttler.guard';
 import { ApiKeyGuard } from '../api-keys/guards/api-key.guard';
 
 @ApiSecurity('x-api-key')
 @Controller('public')
-@UseGuards(PublicKeyThrottlerGuard, ApiKeyGuard)
+@UseGuards(ThrottlerGuard, ApiKeyGuard)
 export class PublicController {
   constructor(private readonly publicService: PublicService) {}
 

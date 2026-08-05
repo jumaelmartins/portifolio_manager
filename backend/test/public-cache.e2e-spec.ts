@@ -15,6 +15,7 @@ describe('Public API hardening — caching (e2e)', () => {
     // High limit so cache assertions never trip the throttle.
     process.env.PUBLIC_RATE_LIMIT = '1000';
     process.env.PUBLIC_RATE_TTL = '60';
+    process.env.PUBLIC_IP_RATE_LIMIT = '1000';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -38,6 +39,7 @@ describe('Public API hardening — caching (e2e)', () => {
   afterAll(async () => {
     delete process.env.PUBLIC_RATE_LIMIT;
     delete process.env.PUBLIC_RATE_TTL;
+    delete process.env.PUBLIC_IP_RATE_LIMIT;
     await app.close();
   });
 
@@ -57,7 +59,7 @@ describe('Public API hardening — caching (e2e)', () => {
       .set('x-api-key', apiKey)
       .expect(200);
 
-    const etag = first.headers['etag'] as string;
+    const etag = first.headers['etag'];
 
     const second = await request(app.getHttpServer())
       .get('/public/portfolio')

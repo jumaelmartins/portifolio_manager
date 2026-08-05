@@ -14,6 +14,7 @@ describe('API keys + keyed public consumption (e2e)', () => {
   beforeAll(async () => {
     process.env.PUBLIC_RATE_LIMIT = '1000';
     process.env.PUBLIC_RATE_TTL = '60';
+    process.env.PUBLIC_IP_RATE_LIMIT = '1000';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -31,6 +32,7 @@ describe('API keys + keyed public consumption (e2e)', () => {
   afterAll(async () => {
     delete process.env.PUBLIC_RATE_LIMIT;
     delete process.env.PUBLIC_RATE_TTL;
+    delete process.env.PUBLIC_IP_RATE_LIMIT;
     await app.close();
   });
 
