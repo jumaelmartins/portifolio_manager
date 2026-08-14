@@ -15,6 +15,7 @@ describe("normalizeProject", () => {
         description: "CMS",
         repo_url: "https://github.com/example/repo",
         live_url: null,
+        video_url: "https://youtu.be/dQw4w9WgXcQ",
         d_categoryId: 3,
         f_imagesId: 9,
         category: { id: 3, category: "Full Stack" },
@@ -36,6 +37,7 @@ describe("normalizeProject", () => {
       description: "CMS",
       repositoryUrl: "https://github.com/example/repo",
       liveUrl: null,
+      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
       category: { id: 3, name: "Full Stack" },
       technologies: [{ id: 2, name: "TypeScript" }],
       coverImage: {
@@ -94,6 +96,7 @@ describe("toBackendProjectInput", () => {
         technologyIds: [2],
         repositoryUrl: "",
         liveUrl: "",
+        videoUrl: "",
         coverImageId: null,
       }),
     ).toEqual({
@@ -103,7 +106,21 @@ describe("toBackendProjectInput", () => {
       technologyIds: [2],
       repo_url: undefined,
       live_url: undefined,
+      video_url: undefined,
       f_imagesId: undefined,
     });
+  });
+
+  it("forwards a populated video url", () => {
+    expect(
+      toBackendProjectInput({
+        title: "Portfolio Manager",
+        description: "CMS",
+        categoryId: 3,
+        technologyIds: [2],
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+        coverImageId: null,
+      }).video_url,
+    ).toBe("https://youtu.be/dQw4w9WgXcQ");
   });
 });

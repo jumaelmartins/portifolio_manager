@@ -28,6 +28,7 @@ export type Project = {
   description: string;
   repositoryUrl: string | null;
   liveUrl: string | null;
+  videoUrl: string | null;
   category: CategoryOption;
   technologies: TechnologyOption[];
   coverImage: ImageOption | null;
@@ -43,6 +44,7 @@ export type ProjectInput = {
   technologyIds: number[];
   repositoryUrl?: string;
   liveUrl?: string;
+  videoUrl?: string;
   coverImageId: number | null;
 };
 
@@ -64,6 +66,7 @@ export type BackendProject = {
   description: string;
   repo_url: string | null;
   live_url: string | null;
+  video_url: string | null;
   d_categoryId: number;
   f_imagesId: number | null;
   category: {
@@ -87,5 +90,6 @@ export type BackendProjectInput = {
   technologyIds: number[];
   repo_url: string | undefined;
   live_url: string | undefined;
+  video_url: string | undefined;
   f_imagesId: number | undefined;
 };

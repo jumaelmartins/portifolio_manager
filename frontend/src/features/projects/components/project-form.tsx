@@ -46,6 +46,7 @@ const emptyProject: ProjectInput = {
   technologyIds: [],
   repositoryUrl: "",
   liveUrl: "",
+  videoUrl: "",
   coverImageId: null,
 };
 
@@ -192,6 +193,17 @@ export function ProjectForm({
                 />
                 <FieldErrors error={errors.liveUrl} id="project-live-error" />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-video">YouTube video URL</Label>
+              <Input
+                id="project-video"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                aria-invalid={Boolean(errors.videoUrl)}
+                {...form.register("videoUrl")}
+              />
+              <FieldErrors error={errors.videoUrl} id="project-video-error" />
             </div>
           </CardContent>
         </Card>

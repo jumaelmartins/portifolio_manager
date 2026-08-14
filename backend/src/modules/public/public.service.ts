@@ -43,6 +43,7 @@ export class PublicService {
             description: true,
             repo_url: true,
             live_url: true,
+            video_url: true,
             category: { select: { id: true, category: true } },
             technologies: { select: { id: true, tech: true } },
             f_images: { select: IMAGE_SELECT },

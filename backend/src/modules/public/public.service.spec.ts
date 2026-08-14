@@ -71,6 +71,18 @@ describe('PublicService', () => {
     expect(result.f_profile_picture?.f_images).not.toHaveProperty('src_path');
   });
 
+  it('exposes project links including the video url', async () => {
+    findUnique.mockResolvedValue(emptyPortfolio());
+
+    await service.getPortfolio(1);
+
+    const projectSelect = findUnique.mock.calls[0][0].select.f_projects.select;
+
+    expect(projectSelect.repo_url).toBe(true);
+    expect(projectSelect.live_url).toBe(true);
+    expect(projectSelect.video_url).toBe(true);
+  });
+
   it('throws when the user does not exist', async () => {
     findUnique.mockResolvedValue(null);
 
