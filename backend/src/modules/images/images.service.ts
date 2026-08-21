@@ -7,7 +7,10 @@ import { ConfigService } from '@nestjs/config';
 import type { f_images } from '@prisma/client';
 import { SaveImageDto } from './dto/save-image.dto';
 import { ImagesRepository } from './repository/images.repository';
-import { presentImage } from '../../common/presenters/image.presenter';
+import {
+  presentImage,
+  presentImageWithUsage,
+} from '../../common/presenters/image.presenter';
 
 @Injectable()
 export class ImagesService {
@@ -23,7 +26,11 @@ export class ImagesService {
 
   async findByUser(id: number) {
     const images = await this.imagesRepository.findByUser(id);
-    return images.map((image) => this.present(image));
+    const baseUrl = this.configService.get<string>(
+      'BACKEND_PUBLIC_URL',
+      'http://localhost:3000',
+    );
+    return images.map((image) => presentImageWithUsage(image, baseUrl));
   }
 
   async findOwned(id: number, userId: number) {

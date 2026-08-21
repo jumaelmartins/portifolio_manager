@@ -9,6 +9,8 @@ describe('ImagesService', () => {
     f_userId: 7,
     created_at: new Date('2026-01-01T00:00:00Z'),
     updated_at: new Date('2026-01-01T00:00:00Z'),
+    f_projects: [],
+    f_profile_picture: null,
   };
   const repository = {
     saveImage: jest.fn(),
@@ -41,6 +43,28 @@ describe('ImagesService', () => {
     const [presented] = await service.findByUser(7);
     expect(presented).not.toHaveProperty('src_path');
     expect(repository.findByUser).toHaveBeenCalledWith(7);
+  });
+
+  it('presents each listed image with its usage', async () => {
+    repository.findByUser.mockResolvedValue([
+      {
+        id: 5,
+        description: null,
+        src_path: 'uploads/1/a.png',
+        f_userId: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+        f_projects: [{ id: 2, title: 'Portfolio' }],
+        f_profile_picture: null,
+      },
+    ]);
+
+    const result = await service.findByUser(1);
+
+    expect(result[0].usage).toEqual({
+      projects: [{ id: 2, title: 'Portfolio' }],
+      isProfilePicture: false,
+    });
   });
 
   it('hides an image that is not owned by the requesting user', async () => {

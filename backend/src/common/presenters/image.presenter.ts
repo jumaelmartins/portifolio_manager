@@ -15,3 +15,24 @@ export function presentImage(image: f_images, publicBaseUrl: string) {
     updated_at: image.updated_at,
   };
 }
+
+type ImageWithUsageInput = f_images & {
+  f_projects: { id: number; title: string }[];
+  f_profile_picture: { id: number } | null;
+};
+
+export function presentImageWithUsage(
+  image: ImageWithUsageInput,
+  publicBaseUrl: string,
+) {
+  return {
+    ...presentImage(image, publicBaseUrl),
+    usage: {
+      projects: image.f_projects.map((project) => ({
+        id: project.id,
+        title: project.title,
+      })),
+      isProfilePicture: image.f_profile_picture !== null,
+    },
+  };
+}
