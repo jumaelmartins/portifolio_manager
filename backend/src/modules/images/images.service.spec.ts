@@ -1,5 +1,8 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { unlink } from 'fs/promises';
 import { ImagesService } from './images.service';
+
+jest.mock('fs/promises');
 
 describe('ImagesService', () => {
   const image = {
@@ -124,16 +127,13 @@ describe('ImagesService', () => {
       repository.delete.mockImplementation(async () => {
         order.push('db');
       });
-      const unlink = jest
-        .spyOn(await import('fs/promises'), 'unlink')
-        .mockImplementation(async () => {
-          order.push('unlink');
-        });
+      (unlink as jest.Mock).mockImplementation(async () => {
+        order.push('unlink');
+      });
 
       await service.delete(5);
 
       expect(order).toEqual(['db', 'unlink']);
-      unlink.mockRestore();
     });
   });
 });

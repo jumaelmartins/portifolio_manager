@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { f_images } from '@prisma/client';
+import { unlink } from 'fs/promises';
 import { SaveImageDto } from './dto/save-image.dto';
 import { ImagesRepository } from './repository/images.repository';
 import {
@@ -64,8 +65,7 @@ export class ImagesService {
 
     await this.imagesRepository.delete(id);
     try {
-      const fs = await import('fs/promises');
-      await fs.unlink(image.src_path);
+      await unlink(image.src_path);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn('file already deleted:', message);
