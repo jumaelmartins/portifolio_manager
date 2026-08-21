@@ -100,6 +100,7 @@ describe('ImagesService', () => {
         ConflictException,
       );
       expect(repository.delete).not.toHaveBeenCalled();
+      expect(unlink).not.toHaveBeenCalled();
     });
 
     it('blocks deletion of the profile picture', async () => {
@@ -114,6 +115,8 @@ describe('ImagesService', () => {
       await expect(service.delete(5)).rejects.toBeInstanceOf(
         ConflictException,
       );
+      expect(repository.delete).not.toHaveBeenCalled();
+      expect(unlink).not.toHaveBeenCalled();
     });
 
     it('deletes the row before unlinking an unused image', async () => {

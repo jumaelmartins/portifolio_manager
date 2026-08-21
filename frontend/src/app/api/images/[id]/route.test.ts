@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { backendFetch, revalidatePortfolio } = vi.hoisted(() => ({
@@ -60,6 +62,18 @@ describe("PATCH /api/images/:id", () => {
       new Request("http://x/api/images/5", {
         method: "PATCH",
         body: JSON.stringify({ description: "a".repeat(201) }),
+      }),
+      context("5"),
+    );
+    expect(response.status).toBe(400);
+    expect(backendFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed JSON body", async () => {
+    const response = await PATCH(
+      new Request("http://x/api/images/5", {
+        method: "PATCH",
+        body: "not json",
       }),
       context("5"),
     );

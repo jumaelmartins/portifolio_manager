@@ -16,7 +16,7 @@ import type { MediaImage } from "../types";
 import { MediaCard } from "./media-card";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
 type MediaViewProps = {
   images: MediaImage[];

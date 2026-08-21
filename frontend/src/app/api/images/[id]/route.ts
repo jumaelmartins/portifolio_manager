@@ -27,7 +27,8 @@ export async function PATCH(request: Request, context: ImageRouteContext) {
     );
   }
 
-  const parsed = descriptionSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = descriptionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { status: 400, message: "Invalid image data" },
