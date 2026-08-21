@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ImagesService } from './images.service';
 
 describe('ImagesService', () => {
@@ -17,6 +17,7 @@ describe('ImagesService', () => {
     findById: jest.fn(),
     findByUser: jest.fn(),
     delete: jest.fn(),
+    findWithUsage: jest.fn(),
   };
   const config = {
     get: jest.fn().mockReturnValue('http://localhost:3000'),
@@ -79,5 +80,60 @@ describe('ImagesService', () => {
     repository.findById.mockResolvedValue(image);
 
     await expect(service.findEntity(9)).resolves.toBe(image);
+  });
+
+  describe('delete', () => {
+    it('blocks deletion of an image used by a project', async () => {
+      repository.findWithUsage.mockResolvedValue({
+        id: 5,
+        src_path: 'uploads/1/a.png',
+        f_userId: 1,
+        f_projects: [{ id: 2, title: 'Portfolio' }],
+        f_profile_picture: null,
+      });
+
+      await expect(service.delete(5)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
+
+    it('blocks deletion of the profile picture', async () => {
+      repository.findWithUsage.mockResolvedValue({
+        id: 5,
+        src_path: 'uploads/1/a.png',
+        f_userId: 1,
+        f_projects: [],
+        f_profile_picture: { id: 9 },
+      });
+
+      await expect(service.delete(5)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
+
+    it('deletes the row before unlinking an unused image', async () => {
+      const order: string[] = [];
+      repository.findWithUsage.mockResolvedValue({
+        id: 5,
+        src_path: 'uploads/1/a.png',
+        f_userId: 1,
+        f_projects: [],
+        f_profile_picture: null,
+      });
+      repository.delete.mockImplementation(async () => {
+        order.push('db');
+      });
+      const unlink = jest
+        .spyOn(await import('fs/promises'), 'unlink')
+        .mockImplementation(async () => {
+          order.push('unlink');
+        });
+
+      await service.delete(5);
+
+      expect(order).toEqual(['db', 'unlink']);
+      unlink.mockRestore();
+    });
   });
 });

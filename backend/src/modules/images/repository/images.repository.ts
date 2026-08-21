@@ -30,4 +30,10 @@ export class ImagesRepository {
   async delete(id: number): Promise<void> {
     await this.prismaService.f_images.delete({ where: { id } });
   }
+  async findWithUsage(id: number): Promise<ImageWithUsage | null> {
+    return await this.prismaService.f_images.findUnique({
+      where: { id },
+      include: imageWithUsageInclude,
+    });
+  }
 }
