@@ -21,6 +21,7 @@ describe('ImagesService', () => {
     findByUser: jest.fn(),
     delete: jest.fn(),
     findWithUsage: jest.fn(),
+    updateDescription: jest.fn(),
   };
   const config = {
     get: jest.fn().mockReturnValue('http://localhost:3000'),
@@ -134,6 +135,48 @@ describe('ImagesService', () => {
       await service.delete(5);
 
       expect(order).toEqual(['db', 'unlink']);
+    });
+  });
+
+  describe('updateDescription', () => {
+    it('updates the description of an owned image', async () => {
+      repository.findById.mockResolvedValue({
+        id: 5,
+        f_userId: 1,
+        src_path: 'uploads/1/a.png',
+        description: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+      repository.updateDescription.mockResolvedValue({
+        id: 5,
+        f_userId: 1,
+        src_path: 'uploads/1/a.png',
+        description: 'New',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const result = await service.updateDescription(5, 1, 'New');
+
+      expect(repository.updateDescription).toHaveBeenCalledWith(5, 'New');
+      expect(result.description).toBe('New');
+    });
+
+    it('rejects updating an image the user does not own', async () => {
+      repository.findById.mockResolvedValue({
+        id: 5,
+        f_userId: 2,
+        src_path: 'uploads/2/a.png',
+        description: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      await expect(
+        service.updateDescription(5, 1, 'New'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repository.updateDescription).not.toHaveBeenCalled();
     });
   });
 });

@@ -7,6 +7,7 @@ describe('ImagesController', () => {
   const service = {
     findByUser: jest.fn(),
     findOwned: jest.fn(),
+    updateDescription: jest.fn(),
   };
   const request = {
     user: { sub: '7', role: '2', status: '2' },
@@ -34,5 +35,15 @@ describe('ImagesController', () => {
   it('loads an image only through the owned lookup', async () => {
     await controller.findOne(9, request);
     expect(service.findOwned).toHaveBeenCalledWith(9, 7);
+  });
+
+  it('forwards a description update to the service with the caller id', async () => {
+    service.updateDescription.mockResolvedValue({ id: 5, description: 'New' });
+
+    await controller.update(5, { description: 'New' }, {
+      user: { sub: 1 },
+    } as never);
+
+    expect(service.updateDescription).toHaveBeenCalledWith(5, 1, 'New');
   });
 });

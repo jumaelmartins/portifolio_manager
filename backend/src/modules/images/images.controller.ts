@@ -1,14 +1,17 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ImagesService } from './images.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ActiveUserGuard } from '../auth/guards/active-user.guard';
+import { UpdateImageDto } from './dto/update-image.dto';
 import type { AuthenticatedRequest } from '../../utils/types';
 
 @UseGuards(JwtAuthGuard, ActiveUserGuard)
@@ -27,5 +30,18 @@ export class ImagesController {
   @Get()
   findMine(@Req() req: AuthenticatedRequest) {
     return this.imagesService.findByUser(Number(req.user.sub));
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateImageDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.imagesService.updateDescription(
+      id,
+      Number(req.user.sub),
+      dto.description ?? null,
+    );
   }
 }

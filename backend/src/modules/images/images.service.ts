@@ -73,6 +73,22 @@ export class ImagesService {
     return { message: 'successfull deleted image!' };
   }
 
+  async updateDescription(
+    id: number,
+    userId: number,
+    description: string | null,
+  ) {
+    const image = await this.imagesRepository.findById(id);
+    if (!image || image.f_userId !== userId) {
+      throw new NotFoundException('Image not found');
+    }
+    const updated = await this.imagesRepository.updateDescription(
+      id,
+      description ?? null,
+    );
+    return this.present(updated);
+  }
+
   private present(image: f_images) {
     return presentImage(
       image,

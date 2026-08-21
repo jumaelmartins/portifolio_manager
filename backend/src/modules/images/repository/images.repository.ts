@@ -36,4 +36,13 @@ export class ImagesRepository {
       include: imageWithUsageInclude,
     });
   }
+  async updateDescription(
+    id: number,
+    description: string | null,
+  ): Promise<f_images> {
+    return await this.prismaService.f_images.update({
+      where: { id },
+      data: { description },
+    });
+  }
 }
