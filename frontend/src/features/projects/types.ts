@@ -8,12 +8,18 @@ export type TechnologyOption = {
   name: string;
 };
 
+export type ImageUsage = {
+  projects: { id: number; title: string }[];
+  isProfilePicture: boolean;
+};
+
 export type ImageOption = {
   id: number;
   description: string | null;
   url: string;
   createdAt: string;
   updatedAt: string;
+  usage?: ImageUsage;
 };
 
 export type Project = {
@@ -46,6 +52,10 @@ export type BackendImage = {
   url: string;
   created_at: string;
   updated_at: string;
+  usage?: {
+    projects: { id: number; title: string }[];
+    isProfilePicture: boolean;
+  };
 };
 
 export type BackendProject = {

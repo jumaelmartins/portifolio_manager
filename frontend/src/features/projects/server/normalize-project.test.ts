@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  normalizeImage,
   normalizeProject,
   toBackendProjectInput,
 } from "./normalize-project";
@@ -43,11 +44,43 @@ describe("normalizeProject", () => {
         url: "/api/uploads/file/1/cover.png",
         createdAt: "2026-06-01T00:00:00.000Z",
         updatedAt: "2026-06-01T00:00:00.000Z",
+        usage: { projects: [], isProfilePicture: false },
       },
       createdAt: "2026-06-01T00:00:00.000Z",
       updatedAt: "2026-06-12T00:00:00.000Z",
       order: 2,
     });
+  });
+});
+
+describe("normalizeImage", () => {
+  it("maps usage and rewrites the upload url", () => {
+    const result = normalizeImage({
+      id: 5,
+      description: "cover",
+      url: "http://localhost:3000/uploads/1/cover.png",
+      created_at: "2026-06-01T00:00:00.000Z",
+      updated_at: "2026-06-01T00:00:00.000Z",
+      usage: { projects: [{ id: 2, title: "Portfolio" }], isProfilePicture: true },
+    });
+
+    expect(result.url).toBe("/api/uploads/file/1/cover.png");
+    expect(result.usage).toEqual({
+      projects: [{ id: 2, title: "Portfolio" }],
+      isProfilePicture: true,
+    });
+  });
+
+  it("defaults usage to empty when the backend omits it", () => {
+    const result = normalizeImage({
+      id: 6,
+      description: null,
+      url: "http://localhost:3000/uploads/1/x.png",
+      created_at: "2026-06-01T00:00:00.000Z",
+      updated_at: "2026-06-01T00:00:00.000Z",
+    });
+
+    expect(result.usage).toEqual({ projects: [], isProfilePicture: false });
   });
 });
 

@@ -83,6 +83,7 @@ describe("POST /api/uploads", () => {
         url: "/api/uploads/file/7/cover.png",
         createdAt: "2026-06-01T00:00:00.000Z",
         updatedAt: "2026-06-01T00:00:00.000Z",
+        usage: { projects: [], isProfilePicture: false },
       },
     });
     expect(backendFetch).toHaveBeenNthCalledWith(1, "/auth/me");

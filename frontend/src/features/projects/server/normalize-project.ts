@@ -23,6 +23,12 @@ export function normalizeImage(image: BackendImage): ImageOption {
     url: rewriteUploadUrl(image.url),
     createdAt: image.created_at,
     updatedAt: image.updated_at,
+    usage: image.usage
+      ? {
+          projects: image.usage.projects,
+          isProfilePicture: image.usage.isProfilePicture,
+        }
+      : { projects: [], isProfilePicture: false },
   };
 }
 
