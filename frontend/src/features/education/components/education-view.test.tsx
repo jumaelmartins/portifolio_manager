@@ -104,7 +104,7 @@ describe("EducationView", () => {
     renderView({ entries });
 
     await user.click(screen.getByRole("combobox", { name: "Sort" }));
-    await user.click(screen.getByRole("option", { name: "Oldest start" }));
+    await user.click(await screen.findByRole("option", { name: "Oldest start" }));
     expect(replace).toHaveBeenLastCalledWith("/education?sort=oldest", {
       scroll: false,
     });

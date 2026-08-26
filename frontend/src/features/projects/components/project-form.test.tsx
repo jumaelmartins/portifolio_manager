@@ -40,7 +40,7 @@ describe("ProjectForm", () => {
     await user.type(screen.getByLabelText("Description"), "Open-source CMS");
     await user.selectOptions(screen.getByLabelText("Category"), "1");
     await user.click(screen.getByRole("combobox", { name: "Technologies" }));
-    await user.click(screen.getByRole("option", { name: "TypeScript" }));
+    await user.click(await screen.findByRole("option", { name: "TypeScript" }));
     await user.click(screen.getByRole("option", { name: "PostgreSQL" }));
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "Create Project" }));
@@ -104,7 +104,7 @@ describe("ProjectForm", () => {
     await user.type(screen.getByLabelText("Description"), "Open-source CMS");
     await user.selectOptions(screen.getByLabelText("Category"), "1");
     await user.click(screen.getByRole("combobox", { name: "Technologies" }));
-    await user.click(screen.getByRole("option", { name: "TypeScript" }));
+    await user.click(await screen.findByRole("option", { name: "TypeScript" }));
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "Create Project" }));
 

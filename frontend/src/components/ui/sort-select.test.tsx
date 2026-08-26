@@ -22,7 +22,7 @@ describe("SortSelect", () => {
     const onValueChange = vi.fn();
     render(<SortSelect value="recent" options={options} onValueChange={onValueChange} />);
     await user.click(screen.getByRole("combobox", { name: "Sort" }));
-    await user.click(screen.getByRole("option", { name: "Title A–Z" }));
+    await user.click(await screen.findByRole("option", { name: "Title A–Z" }));
     expect(onValueChange).toHaveBeenCalledWith("title-asc");
   });
 });

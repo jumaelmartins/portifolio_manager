@@ -64,7 +64,7 @@ describe("TechnologyView", () => {
     );
 
     await user.click(screen.getByRole("combobox", { name: "Sort" }));
-    await user.click(screen.getByRole("option", { name: "Name Z–A" }));
+    await user.click(await screen.findByRole("option", { name: "Name Z–A" }));
     expect(replace).toHaveBeenLastCalledWith("/technologies?sort=name-desc", {
       scroll: false,
     });

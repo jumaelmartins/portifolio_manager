@@ -105,9 +105,9 @@ describe("ProjectsView", () => {
 
     await user.clear(screen.getByRole("searchbox"));
     await user.click(screen.getByRole("combobox", { name: "Category" }));
-    await user.click(screen.getByRole("option", { name: "Full Stack" }));
+    await user.click(await screen.findByRole("option", { name: "Full Stack" }));
     await user.click(screen.getByRole("combobox", { name: "Technology" }));
-    await user.click(screen.getByRole("option", { name: "PostgreSQL" }));
+    await user.click(await screen.findByRole("option", { name: "PostgreSQL" }));
 
     expect(within(table).getByText("Portfolio Manager")).toBeInTheDocument();
     expect(within(table).queryByText("Chat API")).not.toBeInTheDocument();
@@ -142,7 +142,7 @@ describe("ProjectsView", () => {
     expect(rows[1]).toHaveTextContent("Chat API");
 
     await user.click(screen.getByRole("combobox", { name: "Sort" }));
-    await user.click(screen.getByRole("option", { name: "Title Z–A" }));
+    await user.click(await screen.findByRole("option", { name: "Title Z–A" }));
 
     expect(replace).toHaveBeenLastCalledWith("/projects?sort=title-desc", {
       scroll: false,
