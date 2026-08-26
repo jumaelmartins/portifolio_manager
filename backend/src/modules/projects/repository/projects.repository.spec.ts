@@ -56,6 +56,44 @@ describe('ProjectRepository', () => {
     });
   });
 
+  it('forwards video_url on create when provided', async () => {
+    const dto = {
+      title: 'Portfolio',
+      description: 'Description',
+      video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      d_categoryId: 1,
+    } as CreateProjectDto;
+
+    await repository.create(dto, 42);
+
+    expect(projects.create).toHaveBeenCalledWith({
+      data: {
+        title: dto.title,
+        description: dto.description,
+        video_url: dto.video_url,
+        d_categoryId: dto.d_categoryId,
+        f_userId: 42,
+      },
+      include,
+    });
+  });
+
+  it('forwards video_url on update when provided', async () => {
+    const dto = {
+      video_url: 'https://youtu.be/dQw4w9WgXcQ',
+    } as UpdateProjectDto;
+
+    await repository.update(7, 42, dto);
+
+    expect(projects.update).toHaveBeenCalledWith({
+      where: { id: 7, f_userId: 42 },
+      data: {
+        video_url: dto.video_url,
+      },
+      include,
+    });
+  });
+
   it('allowlists create fields and always uses the authenticated user id', async () => {
     const payload = {
       title: 'Portfolio',

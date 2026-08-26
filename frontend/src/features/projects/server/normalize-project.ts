@@ -39,6 +39,7 @@ export function normalizeProject(project: BackendProject): Project {
     description: project.description,
     repositoryUrl: project.repo_url,
     liveUrl: project.live_url,
+    videoUrl: project.video_url,
     category: {
       id: project.category.id,
       name: project.category.category,
@@ -64,6 +65,7 @@ export function toBackendProjectInput(
     technologyIds: input.technologyIds,
     repo_url: input.repositoryUrl || undefined,
     live_url: input.liveUrl || undefined,
+    video_url: input.videoUrl || undefined,
     f_imagesId: input.coverImageId ?? undefined,
   };
 }

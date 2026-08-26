@@ -8,6 +8,7 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { IsYouTubeUrl } from '../../../common/validators/is-youtube-url';
 
 export class CreateProjectDto {
   @IsString()
@@ -27,6 +28,10 @@ export class CreateProjectDto {
   @ValidateIf((_object, value) => value !== undefined)
   @IsUrl({ require_protocol: true })
   live_url?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsYouTubeUrl()
+  video_url?: string;
 
   @IsInt()
   d_categoryId: number;

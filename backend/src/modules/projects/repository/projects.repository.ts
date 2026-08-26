@@ -22,6 +22,7 @@ export class ProjectRepository {
         description: data.description,
         ...(data.repo_url !== undefined ? { repo_url: data.repo_url } : {}),
         ...(data.live_url !== undefined ? { live_url: data.live_url } : {}),
+        ...(data.video_url !== undefined ? { video_url: data.video_url } : {}),
         d_categoryId: data.d_categoryId,
         ...(data.f_imagesId !== undefined
           ? { f_imagesId: data.f_imagesId }
@@ -71,6 +72,7 @@ export class ProjectRepository {
           : {}),
         ...(data.repo_url !== undefined ? { repo_url: data.repo_url } : {}),
         ...(data.live_url !== undefined ? { live_url: data.live_url } : {}),
+        ...(data.video_url !== undefined ? { video_url: data.video_url } : {}),
         ...(data.d_categoryId !== undefined
           ? { d_categoryId: data.d_categoryId }
           : {}),

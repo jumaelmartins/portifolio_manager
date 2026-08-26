@@ -26,6 +26,24 @@ describe("projectSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a YouTube video URL", () => {
+    expect(
+      projectSchema.safeParse({
+        ...validProject,
+        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects a non-YouTube video URL", () => {
+    expect(
+      projectSchema.safeParse({
+        ...validProject,
+        videoUrl: "https://vimeo.com/76979871",
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects duplicate technology IDs", () => {
     const result = projectSchema.safeParse({
       ...validProject,
@@ -44,6 +62,7 @@ describe("projectSchema", () => {
         ...validProject,
         repositoryUrl: "",
         liveUrl: "",
+        videoUrl: "",
         coverImageId: null,
       }).success,
     ).toBe(true);
