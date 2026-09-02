@@ -1,5 +1,11 @@
 import { PublicApiPanel } from "@/features/public-api/components/public-api-panel";
 
+// Render per request so BACKEND_PUBLIC_URL is read at runtime. Without this the
+// page is statically prerendered at build time (when the env var is unset,
+// since it is a runtime-only container env, not a build arg) and the endpoint /
+// docs links get baked to the localhost fallback.
+export const dynamic = "force-dynamic";
+
 export default function PublicApiPage() {
   const baseUrl =
     process.env.BACKEND_PUBLIC_URL ??
