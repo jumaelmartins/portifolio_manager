@@ -21,6 +21,7 @@ import {
   purgeProject,
   reorderProjects,
   restoreProject,
+  setProjectFeatured,
   unarchiveProject,
   updateProject,
   uploadImage,
@@ -98,6 +99,37 @@ export function useUpdateProject() {
         queryClient.invalidateQueries({
           queryKey: projectKeys.detail(variables.id),
         }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useSetProjectFeatured() {
+  const queryClient = useQueryClient();
+  const activeKey = [...projectKeys.all, "active"];
+
+  return useMutation({
+    mutationFn: ({ id, featured }: { id: number; featured: boolean }) =>
+      setProjectFeatured(id, featured),
+    onMutate: async ({ id, featured }) => {
+      await queryClient.cancelQueries({ queryKey: activeKey });
+      const previous = queryClient.getQueryData<Project[]>(activeKey);
+      queryClient.setQueryData<Project[]>(activeKey, (items) =>
+        items?.map((project) =>
+          project.id === id ? { ...project, featured } : project,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(activeKey, context.previous);
+      }
+    },
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: projectKeys.all }),
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
       ]);
     },

@@ -56,6 +56,55 @@ describe('ProjectRepository', () => {
     });
   });
 
+  it('persists the featured flag on create', async () => {
+    const dto = {
+      title: 'Portfolio',
+      description: 'Description',
+      d_categoryId: 1,
+      featured: true,
+    } as CreateProjectDto;
+
+    await repository.create(dto, 42);
+
+    expect(projects.create).toHaveBeenCalledWith({
+      data: {
+        title: dto.title,
+        description: dto.description,
+        d_categoryId: dto.d_categoryId,
+        f_userId: 42,
+        featured: true,
+      },
+      include,
+    });
+  });
+
+  it('persists a featured flag toggled off on update', async () => {
+    const dto = { featured: false } as UpdateProjectDto;
+
+    await repository.update(7, 42, dto);
+
+    expect(projects.update).toHaveBeenCalledWith({
+      where: { id: 7, f_userId: 42 },
+      data: { featured: false },
+      include,
+    });
+  });
+
+  it('filters the list to featured projects when requested', async () => {
+    await repository.findAll(42, 'active', true);
+
+    expect(projects.findMany).toHaveBeenCalledWith({
+      where: {
+        f_userId: 42,
+        archived_at: null,
+        deleted_at: null,
+        featured: true,
+      },
+      include,
+      orderBy: { order: 'asc' },
+    });
+  });
+
   it('allowlists create fields and always uses the authenticated user id', async () => {
     const payload = {
       title: 'Portfolio',

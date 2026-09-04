@@ -35,10 +35,18 @@ describe('CreateProjectDto', () => {
     ['f_imagesId', { ...validProject, f_imagesId: 2.5 }],
     ['technologyIds', { ...validProject, technologyIds: [3, 3] }],
     ['technologyIds', { ...validProject, technologyIds: [3, '4'] }],
+    ['featured', { ...validProject, featured: 'yes' }],
+    ['featured', { ...validProject, featured: 1 }],
   ])('rejects invalid %s', async (property, payload) => {
     const errors = await validateDto(payload);
 
     expect(errors.map((error) => error.property)).toContain(property);
+  });
+
+  it.each([true, false])('accepts featured = %s', async (featured) => {
+    await expect(validateDto({ ...validProject, featured })).resolves.toEqual(
+      [],
+    );
   });
 
   it('allows optional urls, cover and technologies to be omitted', async () => {

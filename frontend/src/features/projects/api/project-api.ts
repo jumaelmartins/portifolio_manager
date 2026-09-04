@@ -69,6 +69,13 @@ export function updateProject(id: number, input: ProjectInput) {
   });
 }
 
+export function setProjectFeatured(id: number, featured: boolean) {
+  return requestJson<Project>(`/api/projects/${id}/featured`, {
+    method: "PATCH",
+    body: JSON.stringify({ featured }),
+  });
+}
+
 export function deleteProject(id: number) {
   return requestJson<{ id: number }>(`/api/projects/${id}`, {
     method: "DELETE",

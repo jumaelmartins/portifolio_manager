@@ -185,6 +185,7 @@ model f_projects {
   description  String
   repo_url     String?
   live_url     String?
+  featured     Boolean          @default(false)
   order        Int              @default(0)
   f_user       f_user           @relation(fields: [f_userId], references: [id])
   f_userId     Int

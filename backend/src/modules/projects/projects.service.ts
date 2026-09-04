@@ -37,10 +37,11 @@ export class ProjectsService {
     return this.presentProject(created);
   }
 
-  async findAll(userId: number, state?: string) {
+  async findAll(userId: number, state?: string, featured?: boolean) {
     const projects = await this.projectRepository.findAll(
       userId,
       parseContentState(state),
+      featured,
     );
     return projects.map((project) => this.presentProject(project));
   }
