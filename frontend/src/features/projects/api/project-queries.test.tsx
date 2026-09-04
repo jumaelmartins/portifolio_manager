@@ -3,14 +3,15 @@ import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { updateProject, uploadImage } = vi.hoisted(() => ({
+const { updateProject, uploadImage, setProjectFeatured } = vi.hoisted(() => ({
   updateProject: vi.fn(),
   uploadImage: vi.fn(),
+  setProjectFeatured: vi.fn(),
 }));
 
 vi.mock("./project-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./project-api")>();
-  return { ...actual, updateProject, uploadImage };
+  return { ...actual, updateProject, uploadImage, setProjectFeatured };
 });
 
 import {
@@ -19,10 +20,12 @@ import {
   usePurgeProject,
   useRestoreProject,
   useProjects,
+  useSetProjectFeatured,
   useUnarchiveProject,
   useUpdateProject,
   useUploadImage,
 } from "./project-queries";
+import type { Project } from "../types";
 
 describe("project queries", () => {
   let queryClient: QueryClient;
@@ -80,6 +83,49 @@ describe("project queries", () => {
       queryKey: projectKeys.detail(7),
     });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
+  });
+
+  it("optimistically flips featured in the active cache and invalidates on settle", async () => {
+    const activeKey = [...projectKeys.all, "active"];
+    queryClient.setQueryData<Project[]>(activeKey, [
+      { id: 7, featured: false } as Project,
+    ]);
+    setProjectFeatured.mockResolvedValue({ id: 7, featured: true });
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useSetProjectFeatured(), {
+      wrapper: Wrapper,
+    });
+
+    result.current.mutate({ id: 7, featured: true });
+
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryData<Project[]>(activeKey)?.[0].featured,
+      ).toBe(true),
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(setProjectFeatured).toHaveBeenCalledWith(7, true);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: projectKeys.all });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
+  });
+
+  it("rolls the active cache back when the featured toggle fails", async () => {
+    const activeKey = [...projectKeys.all, "active"];
+    queryClient.setQueryData<Project[]>(activeKey, [
+      { id: 7, featured: false } as Project,
+    ]);
+    setProjectFeatured.mockRejectedValue(new Error("boom"));
+    const { result } = renderHook(() => useSetProjectFeatured(), {
+      wrapper: Wrapper,
+    });
+
+    result.current.mutate({ id: 7, featured: true });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(queryClient.getQueryData<Project[]>(activeKey)?.[0].featured).toBe(
+      false,
+    );
   });
 
   it("invalidates images after an upload", async () => {

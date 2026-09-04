@@ -28,6 +28,7 @@ export type Project = {
   description: string;
   repositoryUrl: string | null;
   liveUrl: string | null;
+  featured: boolean;
   category: CategoryOption;
   technologies: TechnologyOption[];
   coverImage: ImageOption | null;
@@ -64,6 +65,7 @@ export type BackendProject = {
   description: string;
   repo_url: string | null;
   live_url: string | null;
+  featured: boolean;
   d_categoryId: number;
   f_imagesId: number | null;
   category: {

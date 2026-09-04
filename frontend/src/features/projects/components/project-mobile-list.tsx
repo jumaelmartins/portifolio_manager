@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ContentRowActions } from "@/components/ui/content-row-actions";
 import type { ContentState } from "@/lib/content-state";
 import type { Project } from "../types";
+import { FeaturedToggle } from "./featured-toggle";
 
 type ProjectMobileListProps = {
   projects: Project[];
@@ -66,16 +67,21 @@ export function ProjectMobileList({
               <span className="text-xs text-muted-foreground">
                 Updated {format(new Date(project.updatedAt), "MMM d, yyyy")}
               </span>
-              <ContentRowActions
-                state={state}
-                label={project.title}
-                editHref={`/projects/${project.id}/edit`}
-                onArchive={() => onArchive(project)}
-                onUnarchive={() => onUnarchive(project)}
-                onRestore={() => onRestore(project)}
-                onSoftDelete={() => onSoftDelete(project)}
-                onPurge={() => onPurge(project)}
-              />
+              <div className="flex items-center gap-1">
+                {state === "active" ? (
+                  <FeaturedToggle project={project} />
+                ) : null}
+                <ContentRowActions
+                  state={state}
+                  label={project.title}
+                  editHref={`/projects/${project.id}/edit`}
+                  onArchive={() => onArchive(project)}
+                  onUnarchive={() => onUnarchive(project)}
+                  onRestore={() => onRestore(project)}
+                  onSoftDelete={() => onSoftDelete(project)}
+                  onPurge={() => onPurge(project)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

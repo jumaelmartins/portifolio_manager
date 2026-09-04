@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import type { ContentState } from "@/lib/content-state";
 import type { Project } from "../types";
+import { FeaturedToggle } from "./featured-toggle";
 
 type ProjectTableProps = {
   projects: Project[];
@@ -94,16 +95,21 @@ export function ProjectTable({
                 {format(new Date(project.updatedAt), "MMM d, yyyy")}
               </TableCell>
               <TableCell className="pr-4">
-                <ContentRowActions
-                  state={state}
-                  label={project.title}
-                  editHref={`/projects/${project.id}/edit`}
-                  onArchive={() => onArchive(project)}
-                  onUnarchive={() => onUnarchive(project)}
-                  onRestore={() => onRestore(project)}
-                  onSoftDelete={() => onSoftDelete(project)}
-                  onPurge={() => onPurge(project)}
-                />
+                <div className="flex items-center justify-end gap-1">
+                  {state === "active" ? (
+                    <FeaturedToggle project={project} />
+                  ) : null}
+                  <ContentRowActions
+                    state={state}
+                    label={project.title}
+                    editHref={`/projects/${project.id}/edit`}
+                    onArchive={() => onArchive(project)}
+                    onUnarchive={() => onUnarchive(project)}
+                    onRestore={() => onRestore(project)}
+                    onSoftDelete={() => onSoftDelete(project)}
+                    onPurge={() => onPurge(project)}
+                  />
+                </div>
               </TableCell>
             </TableRow>
           ))}

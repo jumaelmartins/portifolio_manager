@@ -29,6 +29,7 @@ const projects: Project[] = [
     description: "Open-source portfolio CMS",
     repositoryUrl: "https://github.com/example/portfolio",
     liveUrl: null,
+    featured: false,
     category: { id: 3, name: "Full Stack" },
     technologies: [
       { id: 2, name: "TypeScript" },
@@ -45,6 +46,7 @@ const projects: Project[] = [
     description: "Realtime messaging backend",
     repositoryUrl: null,
     liveUrl: null,
+    featured: false,
     category: { id: 5, name: "Backend" },
     technologies: [{ id: 2, name: "TypeScript" }],
     coverImage: null,

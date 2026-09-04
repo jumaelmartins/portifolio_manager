@@ -12,6 +12,12 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UsersService } from '../users/users.service';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -39,6 +45,7 @@ type GoogleOauthCallbackRequest = {
   };
 };
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -51,6 +58,21 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Log in and receive a JWT',
+    description:
+      'Returns an access_token for use as a Bearer token on admin endpoints.',
+  })
+  @ApiOkResponse({
+    description: 'Login succeeded',
+    schema: {
+      example: {
+        message: 'Login Successfully',
+        user: { id: 42, email: 'johndoe@email.com' },
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...',
+      },
+    },
+  })
   async login(@Body() loginUserDto: LoginUserDto) {
     const user = await this.usersService.validateUser(
       loginUserDto.email,
@@ -92,6 +114,7 @@ export class AuthController {
 
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify an email with its token and 6-digit code' })
   async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
     const success = await this.emailVerificationService.verifyEmailWithCode(
       verifyEmailDto.token,
@@ -117,6 +140,7 @@ export class AuthController {
    */
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend the email-verification message' })
   async resendVerification(@Body() resendDto: ResendVerificationDto) {
     const verification =
       await this.emailVerificationService.resendVerificationEmail(
@@ -130,6 +154,8 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get the authenticated user profile' })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   async me(@Request() req: AuthenticatedRequest) {
     return this.usersService.findOne(Number(req.user.sub));
@@ -139,6 +165,8 @@ export class AuthController {
    * Status de verificação de email
    */
   @Get('verification-status')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get the email-verification status' })
   @UseGuards(JwtAuthGuard)
   async getVerificationStatus(@Request() req) {
     const status = await this.emailVerificationService.getVerificationStatus(
@@ -152,6 +180,8 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Change the authenticated user password' })
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async changePassword(
@@ -166,6 +196,10 @@ export class AuthController {
   }
 
   @Get('google')
+  @ApiOperation({
+    summary: 'Start Google OAuth2',
+    description: 'Redirects to Google to begin the OAuth2 flow.',
+  })
   @UseGuards(GoogleOauthGuard)
   async googleAuth() {
     // Inicia o fluxo OAuth2 — o guard redireciona para o Google automaticamente
@@ -222,6 +256,11 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request a password-reset link',
+    description:
+      'Always returns 200 to avoid leaking whether the email is registered.',
+  })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.passwordResetService.requestPasswordReset(dto.email);
     return {
@@ -232,6 +271,7 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset a password using a reset token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.passwordResetService.resetPassword(dto.token, dto.password);
     return { message: 'Senha redefinida com sucesso!' };

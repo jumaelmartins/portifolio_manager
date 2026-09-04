@@ -64,17 +64,39 @@ describe('Controller ownership guards', () => {
     const updateDto = { description: 'Updated' } as UpdateProjectDto;
 
     await controller.create(createDto, request);
-    await controller.findAll(undefined, request);
+    await controller.findAll(undefined, undefined, request);
     await controller.findOne(7, request);
     await controller.update(7, updateDto, request);
     await controller.delete(7, request);
 
     expect(projectService.create).toHaveBeenCalledWith(createDto, 42);
-    expect(projectService.findAll).toHaveBeenCalledWith(42, undefined);
+    expect(projectService.findAll).toHaveBeenCalledWith(
+      42,
+      undefined,
+      undefined,
+    );
     expect(projectService.findOne).toHaveBeenCalledWith(7, 42);
     expect(projectService.update).toHaveBeenCalledWith(7, updateDto, 42);
     expect(projectService.delete).toHaveBeenCalledWith(7, 42);
   });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+    [undefined, undefined],
+    ['nonsense', undefined],
+  ])(
+    'parses the featured query %s into %s before delegating',
+    async (query, expected) => {
+      await controller.findAll('active', query, request);
+
+      expect(projectService.findAll).toHaveBeenCalledWith(
+        42,
+        'active',
+        expected,
+      );
+    },
+  );
 
   it.each(['findOne', 'update', 'delete'] as const)(
     'parses the project id for %s',

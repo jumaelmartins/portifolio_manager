@@ -76,6 +76,14 @@ describe('ProjectsService', () => {
     expect(result.f_images).not.toHaveProperty('src_path');
   });
 
+  it('forwards the featured filter to the repository', async () => {
+    repository.findAll.mockResolvedValue([]);
+
+    await service.findAll(42, 'active', true);
+
+    expect(repository.findAll).toHaveBeenCalledWith(42, 'active', true);
+  });
+
   it('scopes title lookup and creation to the authenticated user', async () => {
     const dto = createDto();
     const createdProject = { id: 1, ...dto, f_userId: 42 };

@@ -26,6 +26,7 @@ export class ProjectRepository {
         ...(data.f_imagesId !== undefined
           ? { f_imagesId: data.f_imagesId }
           : {}),
+        ...(data.featured !== undefined ? { featured: data.featured } : {}),
         f_userId: userId,
         ...(data.technologyIds !== undefined
           ? {
@@ -39,9 +40,17 @@ export class ProjectRepository {
     });
   }
 
-  async findAll(userId: number, state: ContentState = 'active') {
+  async findAll(
+    userId: number,
+    state: ContentState = 'active',
+    featured?: boolean,
+  ) {
     return this.prismaService.f_projects.findMany({
-      where: { f_userId: userId, ...contentStateWhere(state) },
+      where: {
+        f_userId: userId,
+        ...contentStateWhere(state),
+        ...(featured !== undefined ? { featured } : {}),
+      },
       include: projectInclude,
       orderBy: { order: 'asc' },
     });
@@ -77,6 +86,7 @@ export class ProjectRepository {
         ...(data.f_imagesId !== undefined
           ? { f_imagesId: data.f_imagesId }
           : {}),
+        ...(data.featured !== undefined ? { featured: data.featured } : {}),
         ...(data.technologyIds !== undefined
           ? {
               technologies: {

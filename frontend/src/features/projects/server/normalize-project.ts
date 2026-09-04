@@ -39,6 +39,7 @@ export function normalizeProject(project: BackendProject): Project {
     description: project.description,
     repositoryUrl: project.repo_url,
     liveUrl: project.live_url,
+    featured: project.featured,
     category: {
       id: project.category.id,
       name: project.category.category,

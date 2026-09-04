@@ -28,6 +28,7 @@ export class PublicService {
             description: true,
             repo_url: true,
             live_url: true,
+            featured: true,
             category: { select: { id: true, category: true } },
             technologies: { select: { id: true, tech: true } },
             f_images: { select: { id: true, src_path: true } },
@@ -108,5 +109,30 @@ export class PublicService {
     }
 
     return user;
+  }
+
+  async getFeaturedProjects(userId: number) {
+    return this.prismaService.f_projects.findMany({
+      where: {
+        f_userId: userId,
+        featured: true,
+        archived_at: null,
+        deleted_at: null,
+      },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        repo_url: true,
+        live_url: true,
+        featured: true,
+        category: { select: { id: true, category: true } },
+        technologies: { select: { id: true, tech: true } },
+        f_images: { select: { id: true, src_path: true } },
+        created_at: true,
+        updated_at: true,
+      },
+    });
   }
 }

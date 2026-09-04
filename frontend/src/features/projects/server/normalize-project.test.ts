@@ -15,6 +15,7 @@ describe("normalizeProject", () => {
         description: "CMS",
         repo_url: "https://github.com/example/repo",
         live_url: null,
+        featured: true,
         d_categoryId: 3,
         f_imagesId: 9,
         category: { id: 3, category: "Full Stack" },
@@ -36,6 +37,7 @@ describe("normalizeProject", () => {
       description: "CMS",
       repositoryUrl: "https://github.com/example/repo",
       liveUrl: null,
+      featured: true,
       category: { id: 3, name: "Full Stack" },
       technologies: [{ id: 2, name: "TypeScript" }],
       coverImage: {
